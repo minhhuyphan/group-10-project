@@ -42,7 +42,7 @@ const AddUser = ({ onUserAdded }) => {
       };
 
       // Post to backend API
-      const response = await axios.post('http://localhost:3000/users', newUser);
+      const response = await axios.post('http://localhost:3001/users', newUser);
       
       // Reset form
       setFormData({ name: '', email: '', age: '' });

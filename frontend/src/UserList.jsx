@@ -10,7 +10,7 @@ const UserList = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:3000/users');
+      const response = await axios.get('http://localhost:3001/users');
       setUsers(response.data);
       setError(null);
     } catch (err) {
