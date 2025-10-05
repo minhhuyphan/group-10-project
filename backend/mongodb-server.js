@@ -123,6 +123,284 @@ app.post('/users', async (req, res) => {
   }
 });
 
+// PUT /users/:id - Cập nhật user theo ID
+app.put('/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, age } = req.body;
+    
+    console.log(`PUT /users/${id} - Received data:`, req.body);
+    
+    // Validate input
+    if (!name || !email) {
+      return res.status(400).json({ 
+        message: 'Tên và email là bắt buộc',
+        error: 'Missing required fields' 
+      });
+    }
+    
+    if (isMongoConnected) {
+      // Update in MongoDB
+      const updateData = {
+        name: name.trim(),
+        email: email.trim()
+      };
+      
+      if (age) {
+        updateData.age = parseInt(age);
+      }
+      
+      const updatedUser = await User.findByIdAndUpdate(
+        id, 
+        updateData, 
+        { new: true, runValidators: true }
+      );
+      
+      if (!updatedUser) {
+        return res.status(404).json({ 
+          message: 'Không tìm thấy người dùng',
+          error: 'User not found' 
+        });
+      }
+      
+      console.log('User updated in MongoDB:', updatedUser);
+      res.json(updatedUser);
+    } else {
+      // Update in mock data
+      console.log('Updating in mock data...');
+      
+      const userIndex = mockUsers.findIndex(user => user._id === id);
+      if (userIndex === -1) {
+        return res.status(404).json({ 
+          message: 'Không tìm thấy người dùng',
+          error: 'User not found' 
+        });
+      }
+      
+      // Check if email already exists in other users
+      const existingUser = mockUsers.find(user => 
+        user.email === email.trim() && user._id !== id
+      );
+      if (existingUser) {
+        return res.status(400).json({ 
+          message: 'Email đã tồn tại',
+          error: 'Email already exists' 
+        });
+      }
+      
+      // Update user
+      mockUsers[userIndex] = {
+        ...mockUsers[userIndex],
+        name: name.trim(),
+        email: email.trim(),
+        ...(age && { age: parseInt(age) })
+      };
+      
+      console.log('User updated in mock data:', mockUsers[userIndex]);
+      res.json(mockUsers[userIndex]);
+    }
+    
+  } catch (error) {
+    console.error('Error updating user:', error);
+    
+    if (error.code === 11000) {
+      return res.status(400).json({ 
+        message: 'Email đã tồn tại',
+        error: 'Email already exists' 
+      });
+    }
+    
+    res.status(400).json({ 
+      message: 'Không thể cập nhật người dùng',
+      error: error.message 
+    });
+  }
+});
+
+// DELETE /users/:id - Xóa user theo ID
+app.delete('/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    console.log(`DELETE /users/${id}`);
+    
+    if (isMongoConnected) {
+      // Delete from MongoDB
+      const deletedUser = await User.findByIdAndDelete(id);
+      
+      if (!deletedUser) {
+        return res.status(404).json({ 
+          message: 'Không tìm thấy người dùng',
+          error: 'User not found' 
+        });
+      }
+      
+      console.log('User deleted from MongoDB:', deletedUser);
+      res.json({ 
+        message: 'Người dùng đã được xóa thành công',
+        deletedUser: deletedUser 
+      });
+    } else {
+      // Delete from mock data
+      console.log('Deleting from mock data...');
+      
+      const userIndex = mockUsers.findIndex(user => user._id === id);
+      if (userIndex === -1) {
+        return res.status(404).json({ 
+          message: 'Không tìm thấy người dùng',
+          error: 'User not found' 
+        });
+      }
+      
+      const deletedUser = mockUsers.splice(userIndex, 1)[0];
+      console.log('User deleted from mock data:', deletedUser);
+      res.json({ 
+        message: 'Người dùng đã được xóa thành công',
+        deletedUser: deletedUser 
+      });
+    }
+    
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(400).json({ 
+      message: 'Không thể xóa người dùng',
+      error: error.message 
+    });
+  }
+});
+
+// PUT /users/:id - Cập nhật user
+app.put('/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, age } = req.body;
+    
+    console.log('PUT /users/:id - Updating user ID:', id);
+    console.log('Update data:', req.body);
+    
+    // Validate input
+    if (!name || !email) {
+      return res.status(400).json({ 
+        message: 'Tên và email là bắt buộc',
+        error: 'Missing required fields' 
+      });
+    }
+    
+    if (isMongoConnected) {
+      // Update in MongoDB
+      const updateData = {
+        name: name.trim(),
+        email: email.trim()
+      };
+      
+      if (age) {
+        updateData.age = parseInt(age);
+      }
+      
+      const updatedUser = await User.findByIdAndUpdate(
+        id,
+        updateData,
+        { new: true, runValidators: true }
+      );
+      
+      if (updatedUser) {
+        console.log('User updated in MongoDB:', updatedUser);
+        res.json(updatedUser);
+      } else {
+        res.status(404).json({ message: 'Không tìm thấy người dùng' });
+      }
+    } else {
+      // Update in mock data
+      console.log('Updating in mock data...');
+      
+      const index = mockUsers.findIndex(u => u._id == id);
+      if (index !== -1) {
+        // Check if email already exists (excluding current user)
+        const existingUser = mockUsers.find(user => 
+          user.email === email.trim() && user._id != id
+        );
+        if (existingUser) {
+          return res.status(400).json({ 
+            message: 'Email đã tồn tại',
+            error: 'Email already exists' 
+          });
+        }
+        
+        mockUsers[index] = { 
+          ...mockUsers[index], 
+          name: name.trim(),
+          email: email.trim(),
+          ...(age && { age: parseInt(age) })
+        };
+        console.log('User updated in mock data:', mockUsers[index]);
+        res.json(mockUsers[index]);
+      } else {
+        res.status(404).json({ message: 'Không tìm thấy người dùng' });
+      }
+    }
+    
+  } catch (error) {
+    console.error('Error updating user:', error);
+    
+    if (error.code === 11000) {
+      return res.status(400).json({ 
+        message: 'Email đã tồn tại',
+        error: 'Email already exists' 
+      });
+    }
+    
+    res.status(400).json({ 
+      message: 'Không thể cập nhật người dùng',
+      error: error.message 
+    });
+  }
+});
+
+// DELETE /users/:id - Xóa user
+app.delete('/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log('DELETE /users/:id - Deleting user ID:', id);
+    
+    if (isMongoConnected) {
+      // Delete from MongoDB
+      const deletedUser = await User.findByIdAndDelete(id);
+      
+      if (deletedUser) {
+        console.log('User deleted from MongoDB:', deletedUser);
+        res.json({ 
+          message: 'Người dùng đã được xóa thành công',
+          deletedUser 
+        });
+      } else {
+        res.status(404).json({ message: 'Không tìm thấy người dùng' });
+      }
+    } else {
+      // Delete from mock data
+      console.log('Deleting from mock data...');
+      
+      const userToDelete = mockUsers.find(u => u._id == id);
+      if (userToDelete) {
+        mockUsers = mockUsers.filter(u => u._id != id);
+        console.log('User deleted from mock data:', userToDelete);
+        res.json({ 
+          message: 'Người dùng đã được xóa thành công',
+          deletedUser: userToDelete 
+        });
+      } else {
+        res.status(404).json({ message: 'Không tìm thấy người dùng' });
+      }
+    }
+    
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ 
+      message: 'Không thể xóa người dùng',
+      error: error.message 
+    });
+  }
+});
+
 const PORT = 3001;
 
 // Global variable to track MongoDB connection status
@@ -149,16 +427,20 @@ const connectDB = async () => {
     console.log('✅ Connected to MongoDB successfully!');
     
     // Add some sample data if collection is empty
-    const userCount = await User.countDocuments();
-    if (userCount === 0) {
-      console.log('Adding sample data...');
-      const sampleUsers = [
-        { name: 'Nguyễn Văn A', email: 'nguyenvana@example.com', age: 25 },
-        { name: 'Trần Thị B', email: 'tranthib@example.com', age: 30 },
-        { name: 'Lê Văn C', email: 'levanc@example.com', age: 28 }
-      ];
-      await User.insertMany(sampleUsers);
-      console.log('✅ Sample data added!');
+    try {
+      const userCount = await User.countDocuments();
+      if (userCount === 0) {
+        console.log('Adding sample data...');
+        const sampleUsers = [
+          { name: 'Nguyễn Văn A', email: 'nguyenvana@example.com', age: 25 },
+          { name: 'Trần Thị B', email: 'tranthib@example.com', age: 30 },
+          { name: 'Lê Văn C', email: 'levanc@example.com', age: 28 }
+        ];
+        await User.insertMany(sampleUsers);
+        console.log('✅ Sample data added!');
+      }
+    } catch (sampleError) {
+      console.log('⚠️ Sample data initialization skipped:', sampleError.message);
     }
     
   } catch (error) {

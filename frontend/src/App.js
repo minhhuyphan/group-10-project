@@ -5,10 +5,21 @@ import AddUser from './AddUser';
 
 function App() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [editingUser, setEditingUser] = useState(null);
 
   // Function to trigger refresh of user list
   const handleUserAdded = () => {
     setRefreshTrigger(prev => prev + 1);
+  };
+
+  // Function to handle edit user
+  const handleEditUser = (user) => {
+    setEditingUser(user);
+  };
+
+  // Function to cancel editing
+  const handleCancelEdit = () => {
+    setEditingUser(null);
   };
 
   return (
@@ -21,11 +32,20 @@ function App() {
       <main className="App-main">
         <div className="container">
           <div className="section">
-            <AddUser onUserAdded={handleUserAdded} />
+            <AddUser 
+              onUserAdded={handleUserAdded} 
+              editingUser={editingUser}
+              onCancelEdit={handleCancelEdit}
+            />
           </div>
           
           <div className="section">
-            <UserList key={refreshTrigger} />
+            <UserList 
+              key={refreshTrigger} 
+              onEdit={handleEditUser}
+              editingUser={editingUser}
+              onCancelEdit={handleCancelEdit}
+            />
           </div>
         </div>
       </main>
