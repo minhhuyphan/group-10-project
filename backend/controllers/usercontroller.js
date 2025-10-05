@@ -53,3 +53,68 @@ exports.createUser = async (req, res) => {
     res.status(201).json(newMockUser);
   }
 };
+
+// PUT: cập nhật user
+exports.updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log('PUT /users/:id - Updating user ID:', id);
+    console.log('Update data:', req.body);
+
+    // Try to update in MongoDB
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      { ...req.body },
+      { new: true, runValidators: true }
+    );
+
+    if (updatedUser) {
+      console.log('User updated in MongoDB:', updatedUser);
+      res.json(updatedUser);
+    } else {
+      res.status(404).json({ message: "User not found" });
+    }
+  } catch (err) {
+    // Fallback to mock data if MongoDB fails
+    console.log('Database not accessible, updating mock data:', err.message);
+    
+    const index = mockUsers.findIndex(u => u._id == id);
+    if (index !== -1) {
+      mockUsers[index] = { ...mockUsers[index], ...req.body };
+      console.log('User updated in mock data:', mockUsers[index]);
+      res.json(mockUsers[index]);
+    } else {
+      res.status(404).json({ message: "User not found" });
+    }
+  }
+};
+
+// DELETE: xóa user
+exports.deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log('DELETE /users/:id - Deleting user ID:', id);
+
+    // Try to delete from MongoDB
+    const deletedUser = await User.findByIdAndDelete(id);
+
+    if (deletedUser) {
+      console.log('User deleted from MongoDB:', deletedUser);
+      res.json({ message: "User deleted", deletedUser });
+    } else {
+      res.status(404).json({ message: "User not found" });
+    }
+  } catch (err) {
+    // Fallback to mock data if MongoDB fails
+    console.log('Database not accessible, deleting from mock data:', err.message);
+    
+    const userToDelete = mockUsers.find(u => u._id == id);
+    if (userToDelete) {
+      mockUsers = mockUsers.filter(u => u._id != id);
+      console.log('User deleted from mock data:', userToDelete);
+      res.json({ message: "User deleted", deletedUser: userToDelete });
+    } else {
+      res.status(404).json({ message: "User not found" });
+    }
+  }
+};
