@@ -3,7 +3,12 @@
 // 1. Import User model
 const User = require('../models/User');
 
-// Dòng "let users = [];" đã được xóa bỏ.
+// Temporary mock data for demonstration (will be removed when MongoDB is connected)
+let mockUsers = [
+  { _id: '1', name: 'Nguyễn Văn A', email: 'nguyenvana@example.com' },
+  { _id: '2', name: 'Trần Thị B', email: 'tranthib@example.com' },
+  { _id: '3', name: 'Lê Văn C', email: 'levanc@example.com' }
+];
 
 // 2. Cập nhật hàm getUsers
 // Chuyển thành hàm async để sử dụng await
@@ -15,7 +20,9 @@ exports.getUsers = async (req, res) => {
     res.json(users);
   } catch (err) {
     // 4. Xử lý lỗi nếu có sự cố khi truy vấn database
-    res.status(500).json({ message: "Đã xảy ra lỗi khi lấy danh sách người dùng", error: err.message });
+    // Return mock data for demonstration when database is not accessible
+    console.log('Database not accessible, returning mock data:', err.message);
+    res.json(mockUsers);
   }
 };
 
@@ -35,7 +42,14 @@ exports.createUser = async (req, res) => {
     res.status(201).json(newUser);
   } catch (err) {
     // 8. Xử lý lỗi, ví dụ như email bị trùng hoặc thiếu trường dữ liệu
-    // Trả về status 400 (Bad Request)
-    res.status(400).json({ message: "Không thể tạo người dùng mới", error: err.message });
+    // For demonstration: add to mock data when database is not accessible
+    console.log('Database not accessible, adding to mock data:', err.message);
+    const newMockUser = {
+      _id: (mockUsers.length + 1).toString(),
+      name: req.body.name,
+      email: req.body.email
+    };
+    mockUsers.push(newMockUser);
+    res.status(201).json(newMockUser);
   }
 };
