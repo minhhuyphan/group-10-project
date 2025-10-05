@@ -5,16 +5,19 @@ const UserList = ({ editingUser, onEdit, onCancelEdit }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(null); // Track which user is being deleted
 
-  // Fetch users from backend API
+  // Enhanced fetch users with better error handling
   const fetchUsers = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await axios.get('http://localhost:3001/users');
       setUsers(response.data);
-      setError(null);
+      console.log(`✅ Loaded ${response.data.length} users successfully`);
     } catch (err) {
-      setError('Không thể tải danh sách người dùng');
+      const errorMessage = err.response?.data?.message || 'Không thể tải danh sách người dùng';
+      setError(errorMessage);
       console.error('Error fetching users:', err);
     } finally {
       setLoading(false);
@@ -30,19 +33,36 @@ const UserList = ({ editingUser, onEdit, onCancelEdit }) => {
     fetchUsers();
   };
 
-  // Handle delete user
+  // Enhanced delete user with loading state
   const handleDelete = async (userId) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa người dùng này?')) {
+    const user = users.find(u => (u._id || u.id) === userId);
+    const userName = user ? user.name : 'người dùng này';
+    
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa ${userName}?`)) {
       return;
     }
 
     try {
+      setDeleteLoading(userId);
       await axios.delete(`http://localhost:3001/users/${userId}`);
-      setUsers(users.filter(user => (user._id || user.id) !== userId));
-      console.log('User deleted successfully');
+      
+      // Optimistic update
+      setUsers(prevUsers => prevUsers.filter(user => (user._id || user.id) !== userId));
+      console.log('✅ User deleted successfully:', userName);
+      
+      // Show success message briefly
+      const tempSuccess = document.createElement('div');
+      tempSuccess.textContent = `Đã xóa ${userName} thành công`;
+      tempSuccess.style.cssText = 'position:fixed;top:20px;right:20px;background:#4CAF50;color:white;padding:10px;border-radius:4px;z-index:1000';
+      document.body.appendChild(tempSuccess);
+      setTimeout(() => document.body.removeChild(tempSuccess), 3000);
+      
     } catch (err) {
       console.error('Error deleting user:', err);
-      alert('Không thể xóa người dùng. Vui lòng thử lại.');
+      const errorMessage = err.response?.data?.message || 'Không thể xóa người dùng. Vui lòng thử lại.';
+      alert(errorMessage);
+    } finally {
+      setDeleteLoading(null);
     }
   };
 
@@ -78,14 +98,16 @@ const UserList = ({ editingUser, onEdit, onCancelEdit }) => {
                 <button 
                   onClick={() => handleEdit(user)} 
                   className="edit-btn"
+                  disabled={deleteLoading === (user._id || user.id)}
                 >
-                  Sửa
+                  {editingUser && (editingUser._id || editingUser.id) === (user._id || user.id) ? 'Đang sửa...' : 'Sửa'}
                 </button>
                 <button 
                   onClick={() => handleDelete(user._id || user.id)} 
                   className="delete-btn"
+                  disabled={deleteLoading === (user._id || user.id)}
                 >
-                  Xóa
+                  {deleteLoading === (user._id || user.id) ? 'Đang xóa...' : 'Xóa'}
                 </button>
               </div>
             </div>

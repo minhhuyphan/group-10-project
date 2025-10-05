@@ -238,6 +238,89 @@
   font-style: italic;
 }
 
+/* Form Validation Styles */
+.form-group {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.form-group input.error {
+  border-color: #f44336 !important;
+  background-color: #ffebee;
+}
+
+.field-error {
+  color: #f44336;
+  font-size: 12px;
+  display: block;
+  margin-top: 5px;
+  font-style: italic;
+  font-weight: 500;
+}
+
+.form-group input:focus.error {
+  outline-color: #f44336;
+  box-shadow: 0 0 5px rgba(244, 67, 54, 0.3);
+}
+
+/* Enhanced form buttons */
+.form-buttons {
+  display: flex;
+  gap: 15px;
+  margin-top: 25px;
+  align-items: center;
+}
+
+.submit-btn:disabled {
+  background: #cccccc !important;
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+.cancel-btn:disabled {
+  background: #cccccc !important;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Success validation */
+.form-group input:valid:not(.error):not(:placeholder-shown) {
+  border-color: #4CAF50;
+}
+
+/* Form labels */
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Input focus states */
+.form-group input:focus:not(.error) {
+  outline: none;
+  border-color: #2196F3;
+  box-shadow: 0 0 5px rgba(33, 150, 243, 0.3);
+}
+
+/* Loading animation */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #333;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .container {
@@ -255,5 +338,9 @@
   
   .App-header h1 {
     font-size: 2rem;
+  }
+  
+  .form-buttons {
+    flex-direction: column;
   }
 }
