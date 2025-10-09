@@ -11,6 +11,16 @@ const userSchema = new mongoose.Schema({
         required: true,
         unique: true // Đảm bảo email là duy nhất
     }
+    ,
+    password: {
+        type: String,
+        required: false
+    },
+    role: {
+        type: String,
+        enum: ['user', 'admin'],
+        default: 'user'
+    }
 });
 
 module.exports = mongoose.model('User', userSchema);
