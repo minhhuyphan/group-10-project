@@ -11,6 +11,12 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Simple request logger for debugging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} -> ${req.method} ${req.originalUrl}`);
+  next();
+});
+
 // Routes
 const userRoutes = require("./routes/user");
 app.use("/", userRoutes);

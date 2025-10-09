@@ -34,8 +34,8 @@ export const AuthProvider = ({ children }) => {
   const signup = async ({ name, email, password }) => {
     setLoading(true);
     try {
-      const res = await api.post('/signup', { name, email, password });
-      // if backend returns user data or token, handle accordingly
+      const res = await api.post('/auth/signup', { name, email, password });
+      // Do NOT auto-set token/user here — redirect user to login instead
       return res.data;
     } finally {
       setLoading(false);
@@ -45,12 +45,10 @@ export const AuthProvider = ({ children }) => {
   const login = async ({ email, password }) => {
     setLoading(true);
     try {
-      const res = await api.post('/login', { email, password });
+      const res = await api.post('/auth/login', { email, password });
       // Expecting { token, user } from backend
       const { token: receivedToken, user: receivedUser } = res.data;
-      if (receivedToken) {
-        setToken(receivedToken);
-      }
+      if (receivedToken) setToken(receivedToken);
       if (receivedUser) setUser(receivedUser);
       return res.data;
     } finally {
