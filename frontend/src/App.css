@@ -1,43 +1,346 @@
+:root {
+  --bg: #f4f7fb;
+  --card: #ffffff;
+  --muted: #6b7280;
+  --accent: #4f46e5; /* indigo-600 */
+  --accent-2: #06b6d4; /* teal-400 */
+  --success: #10b981;
+  --danger: #ef4444;
+  --glass: rgba(255, 255, 255, 0.6);
+}
+
+* {
+  box-sizing: border-box;
+}
+body,
+html,
+#root {
+  height: 100%;
+  margin: 0;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial;
+}
+
 .App {
-  text-align: center;
   min-height: 100vh;
+  background: linear-gradient(180deg, #eef2ff 0%, var(--bg) 60%);
+  color: #0f172a;
 }
 
 .App-header {
-  background-color: #282c34;
-  padding: 20px;
+  padding: 28px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  max-width: 1200px;
+  margin: 0 auto 28px;
+}
+
+.center-header{justify-content:center}
+
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.brand-logo {
+  width: 54px;
+  height: 54px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: white;
-  margin-bottom: 30px;
+  font-weight: 700;
+  font-size: 18px;
 }
-
-.App-header h1 {
-  margin: 0 0 10px 0;
-  font-size: 2.5rem;
-}
-
-.App-header p {
+.brand h1 {
   margin: 0;
-  font-size: 1.1rem;
-  opacity: 0.8;
+  font-size: 1.35rem;
+}
+.brand p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
 }
 
 .App-main {
-  padding: 0 20px;
   max-width: 1200px;
   margin: 0 auto;
+  padding: 10px;
 }
 
-.container {
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 28px;
+  align-items: start;
+  padding: 20px;
+}
+
+/* Centering utility when not logged in */
+.center-vert {
   display: flex;
-  flex-direction: column;
-  gap: 40px;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
 }
 
 .section {
-  background: #f8f9fa;
-  padding: 30px;
+  max-width: 980px;
+  margin: 0 auto;
+}
+.paypal-card {
+  margin: 0 auto;
+}
+
+.card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 22px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
+}
+
+/* Auth forms area */
+.auth-forms {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.auth-forms .card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.auth-card h3 {
+  margin: 0 0 6px 0;
+  font-size: 1.05rem;
+}
+.auth-card .message {
+  padding: 8px;
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  background: #eef2ff;
+  color: var(--accent);
+}
+.auth-card .error {
+  padding: 8px;
+  border-radius: 8px;
+  background: #fff0f0;
+  color: var(--danger);
+}
+
+/* PayPal-like centered portal */
+.auth-portal {
+  display: flex;
+  justify-content: center;
+  padding: 10px;
+}
+.paypal-card {
+  width: 480px;
+  max-width: 92%;
+  border-radius: 8px;
+  padding: 28px 26px;
+  text-align: left;
+}
+.paypal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.paypal-form input {
+  height: 46px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  border: 1px solid #d6dce6;
+}
+.paypal-form .fullwidth {
+  width: auto;
+}
+.paypal-form .btn-signup {
+  background: #eef3f7;
+  border: 1px solid #dbe6ef;
+  color: #0f172a;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-weight: 700;
+}
+.paypal-form .or-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+.paypal-form .or-row span {
+  flex: 1;
+  height: 1px;
+  background: #e6eef8;
+}
+.paypal-form .or-row small {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.fullwidth {
+  display: inline-block;
+}
+
+form .row {
+  display: flex;
+  gap: 10px;
+}
+form label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: #0f172a;
+}
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"] {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #e6e9ef;
+  background: #fbfdff;
+  color: #0f172a;
+  font-size: 14px;
+  transition: box-shadow 0.18s, border-color 0.18s;
+}
+input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.08);
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+.btn-primary {
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  color: white;
+  box-shadow: 0 8px 26px rgba(79, 70, 229, 0.15);
+}
+
+.create-btn{padding:10px 20px;text-align:center}
+.btn-ghost {
+  background: transparent;
+  border: 1px solid #e6e9ef;
+  color: var(--muted);
+}
+.btn-danger {
+  background: var(--danger);
+  color: white;
+}
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.profile {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+}
+.profile h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+/* User list styles */
+.users-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 18px;
+}
+.user-card {
+  border-left: 6px solid rgba(79, 70, 229, 0.12);
+  padding: 16px;
+  border-radius: 10px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.6),
+    rgba(255, 255, 255, 0.9)
+  );
+}
+.user-card h3 {
+  margin: 0 0 6px 0;
+}
+.user-card p {
+  margin: 6px 0;
+  color: var(--muted);
+}
+
+.top-controls {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.notification {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  padding: 12px 16px;
+  background: var(--card);
+  border-radius: 10px;
+  box-shadow: 0 8px 26px rgba(2, 6, 23, 0.08);
+}
+
+.field-error {
+  color: var(--danger);
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+/* Small utilities */
+.muted {
+  color: var(--muted);
+}
+.center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Responsive */
+@media (max-width: 980px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .auth-forms {
+    flex-direction: row;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 520px) {
+  .auth-forms {
+    flex-direction: column;
+  }
+  .brand-logo {
+    width: 44px;
+    height: 44px;
+  }
 }
 
 /* AddUser Styles */
@@ -75,7 +378,7 @@
 .form-group input:focus {
   outline: none;
   border-color: #007bff;
-  box-shadow: 0 0 5px rgba(0,123,255,0.3);
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
 }
 
 .submit-btn {
@@ -106,7 +409,8 @@
   gap: 10px;
 }
 
-.edit-btn, .delete-btn {
+.edit-btn,
+.delete-btn {
   padding: 5px 10px;
   border: none;
   border-radius: 4px;
@@ -116,7 +420,7 @@
 }
 
 .edit-btn {
-  background-color: #4CAF50;
+  background-color: #4caf50;
   color: white;
 }
 
@@ -191,7 +495,7 @@
   background: white;
   padding: 20px;
   border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   border-left: 4px solid #007bff;
 }
 
@@ -205,7 +509,9 @@
   color: #666;
 }
 
-.loading, .error, .no-users {
+.loading,
+.error,
+.no-users {
   text-align: center;
   padding: 40px;
   font-size: 18px;
@@ -215,7 +521,8 @@
   color: #007bff;
 }
 
-.error, .error-message {
+.error,
+.error-message {
   color: #dc3545;
   background-color: #f8d7da;
   border: 1px solid #f5c6cb;
@@ -286,7 +593,7 @@
 
 /* Success validation */
 .form-group input:valid:not(.error):not(:placeholder-shown) {
-  border-color: #4CAF50;
+  border-color: #4caf50;
 }
 
 /* Form labels */
@@ -300,14 +607,18 @@
 /* Input focus states */
 .form-group input:focus:not(.error) {
   outline: none;
-  border-color: #2196F3;
+  border-color: #2196f3;
   box-shadow: 0 0 5px rgba(33, 150, 243, 0.3);
 }
 
 /* Loading animation */
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .loading-spinner {
@@ -326,20 +637,20 @@
   .container {
     flex-direction: column;
   }
-  
+
   .users-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .user-list-header {
     flex-direction: column;
     gap: 10px;
   }
-  
+
   .App-header h1 {
     font-size: 2rem;
   }
-  
+
   .form-buttons {
     flex-direction: column;
   }
