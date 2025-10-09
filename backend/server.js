@@ -1,7 +1,7 @@
-require("dotenv").config({ path: __dirname + "/.env" });
-const mongoose = require("mongoose");
-const express = require("express");
-const cors = require("cors");
+require('dotenv').config({ path: __dirname + '/.env' });
+const mongoose = require('mongoose');
+const express = require('express');
+const cors = require('cors');
 const app = express();
 
 // Middleware
@@ -14,6 +14,10 @@ app.use(express.json());
 // Routes
 const userRoutes = require("./routes/user");
 app.use("/", userRoutes);
+
+// Authentication routes
+const authRoutes = require('./routes/authRoutes');
+app.use('/auth', authRoutes);
 
 // Add a test route
 app.get("/test", (req, res) => {
@@ -37,6 +41,25 @@ const connectDB = async () => {
     await mongoose.connect(mongoURI);
     isMongoConnected = true;
     console.log("✅ Connected to MongoDB successfully!");
+    
+    // Create default admin user if not exists
+    const User = require('./models/User');
+    try {
+      const adminExists = await User.findOne({ email: 'admin@example.com' });
+      if (!adminExists) {
+        const adminUser = new User({
+          name: 'Admin User',
+          email: 'admin@example.com',
+          password: 'admin123',
+          role: 'admin'
+        });
+        await adminUser.save();
+        console.log('✅ Default admin user created: admin@example.com / admin123');
+      }
+    } catch (adminError) {
+      console.log('⚠️ Admin user creation skipped:', adminError.message);
+    }
+    
   } catch (error) {
     console.error("❌ MongoDB connection error:", error.message);
     console.log("🔄 Falling back to mock data mode");
