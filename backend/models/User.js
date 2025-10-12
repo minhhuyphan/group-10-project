@@ -100,34 +100,21 @@ userSchema.virtual("profile").get(function () {
     } catch (e) {
       avatarValue = this.avatar;
     }
-frontend
-    ,
-    password: {
-        type: String,
-        required: false
-    },
-    role: {
-        type: String,
-        enum: ['user', 'admin'],
-        default: 'user'
     }
 
-  }
-
-  return {
-    id: this._id,
-    name: this.name,
-    email: this.email,
-    role: this.role,
-    avatar: avatarValue,
-    age: this.age,
-    isActive: this.isActive,
-    lastLogin: this.lastLogin,
-    createdAt: this.createdAt,
-    updatedAt: this.updatedAt,
-  };
-backend
-});
+    return {
+      id: this._id,
+      name: this.name,
+      email: this.email,
+      role: this.role,
+      avatar: avatarValue,
+      age: this.age,
+      isActive: this.isActive,
+      lastLogin: this.lastLogin,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+    };
+  });
 
 // Pre-save middleware to hash password
 userSchema.pre("save", async function (next) {
