@@ -16,8 +16,12 @@ const SignUp = ({ onSwitchToLogin }) => {
     setLoading(true);
     try {
       await signup(form);
-      setMessage("Đăng ký thành công. Bạn có thể đăng nhập.");
+      setMessage("Đăng ký thành công. Bạn sẽ được chuyển sang trang đăng nhập...");
       setForm({ name: "", email: "", password: "" });
+      // After short delay, switch to login form if provided
+      setTimeout(() => {
+        if (onSwitchToLogin) onSwitchToLogin();
+      }, 1500);
     } catch (err) {
       const msg = err.response?.data?.message || err.message || "Lỗi đăng ký";
       setMessage(msg);
