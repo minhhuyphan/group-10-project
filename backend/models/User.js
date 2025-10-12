@@ -33,7 +33,17 @@ const userSchema = new mongoose.Schema(
       enum: ["user", "admin"],
       default: "user",
     },
+    // Keep avatar (string) for external URLs or legacy data
     avatar: {
+      type: String,
+      default: null,
+    },
+    // Store binary avatar data in DB so it's persisted across restarts
+    avatarData: {
+      type: Buffer,
+      default: null,
+    },
+    avatarMime: {
       type: String,
       default: null,
     },
@@ -81,12 +91,23 @@ userSchema.index({ isActive: 1 });
 
 // Virtual for user's full profile
 userSchema.virtual("profile").get(function () {
+  // If avatar binary exists, return as data URL to simplify frontend
+  let avatarValue = this.avatar;
+  if (!avatarValue && this.avatarData && this.avatarMime) {
+    try {
+      const base64 = this.avatarData.toString('base64');
+      avatarValue = `data:${this.avatarMime};base64,${base64}`;
+    } catch (e) {
+      avatarValue = this.avatar;
+    }
+  }
+
   return {
     id: this._id,
     name: this.name,
     email: this.email,
     role: this.role,
-    avatar: this.avatar,
+    avatar: avatarValue,
     age: this.age,
     isActive: this.isActive,
     lastLogin: this.lastLogin,

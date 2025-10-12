@@ -14,6 +14,10 @@ export const AuthProvider = ({ children }) => {
     }
   });
   const [loading, setLoading] = useState(false);
+  const [initializing, setInitializing] = useState(() => {
+    // If there's a token in localStorage we should consider the context initializing
+    return !!localStorage.getItem('token');
+  });
 
   useEffect(() => {
     if (token) {
@@ -21,6 +25,32 @@ export const AuthProvider = ({ children }) => {
     } else {
       localStorage.removeItem('token');
     }
+  }, [token]);
+
+  // When token becomes available, refresh user profile from server
+  useEffect(() => {
+    let mounted = true;
+    const fetchProfile = async () => {
+      if (!token) {
+        setInitializing(false);
+        return;
+      }
+      setInitializing(true);
+      try {
+        const res = await api.get('/profile');
+        if (mounted && res.data && res.data.user) {
+          setUser(res.data.user);
+        }
+      } catch (e) {
+        // If token invalid or other error, clear stored auth
+        console.warn('Failed to refresh profile:', e.message || e);
+      }
+      finally {
+        setInitializing(false);
+      }
+    };
+    fetchProfile();
+    return () => { mounted = false; };
   }, [token]);
 
   useEffect(() => {
@@ -62,7 +92,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ token, user, loading, signup, login, logout, setUser }}>
+    <AuthContext.Provider value={{ token, user, loading, initializing, signup, login, logout, setUser }}>
       {children}
     </AuthContext.Provider>
   );

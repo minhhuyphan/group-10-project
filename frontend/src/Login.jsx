@@ -70,8 +70,8 @@ const Login = ({ onSwitchToSignUp }) => {
           </div>
 
           <div style={{ textAlign: "center", marginTop: 12 }}>
-            <a className="muted" href="#">
-              Having trouble logging in?
+            <a className="muted" href="#/forgot-password">
+              Quên mật khẩu?
             </a>
           </div>
 
