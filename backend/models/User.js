@@ -100,6 +100,18 @@ userSchema.virtual("profile").get(function () {
     } catch (e) {
       avatarValue = this.avatar;
     }
+frontend
+    ,
+    password: {
+        type: String,
+        required: false
+    },
+    role: {
+        type: String,
+        enum: ['user', 'admin'],
+        default: 'user'
+    }
+
   }
 
   return {
@@ -114,6 +126,7 @@ userSchema.virtual("profile").get(function () {
     createdAt: this.createdAt,
     updatedAt: this.updatedAt,
   };
+backend
 });
 
 // Pre-save middleware to hash password
