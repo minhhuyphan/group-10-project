@@ -1,16 +1,64 @@
 const User = require('../models/User');
+const RefreshToken = require('../models/RefreshToken');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key';
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'dev_refresh_secret_key';
 
-// === Helper: Tạo token ===
-const generateToken = (id) => {
+// === Helper: Tạo Access Token ===
+const generateAccessToken = (id) => {
   const secret = process.env.JWT_SECRET || JWT_SECRET;
   if (!secret) throw new Error('JWT secret is not configured');
-  const expiresIn = process.env.JWT_EXPIRES_IN || process.env.JWT_EXPIRE || '7d';
+  // Access token có thời gian sống ngắn (15 phút)
+  const expiresIn = process.env.JWT_ACCESS_EXPIRES_IN || '15m';
   return jwt.sign({ id }, secret, { expiresIn });
+};
+
+// === Helper: Tạo Refresh Token ===
+const generateRefreshToken = () => {
+  // Tạo random token
+  return crypto.randomBytes(40).toString('hex');
+};
+
+// === Helper: Lưu Refresh Token vào DB ===
+const saveRefreshToken = async (userId, token, ip = null) => {
+  // Refresh token có thời gian sống dài (7 ngày)
+  const expiresIn = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
+  const expiresAt = new Date();
+  
+  // Parse thời gian từ string như '7d', '30d'
+  const match = expiresIn.match(/(\d+)([d|h|m])/);
+  if (match) {
+    const value = parseInt(match[1]);
+    const unit = match[2];
+    
+    if (unit === 'd') {
+      expiresAt.setDate(expiresAt.getDate() + value);
+    } else if (unit === 'h') {
+      expiresAt.setHours(expiresAt.getHours() + value);
+    } else if (unit === 'm') {
+      expiresAt.setMinutes(expiresAt.getMinutes() + value);
+    }
+  } else {
+    // Default 7 ngày
+    expiresAt.setDate(expiresAt.getDate() + 7);
+  }
+
+  const refreshToken = await RefreshToken.create({
+    token,
+    userId,
+    expiresAt,
+    createdByIp: ip,
+  });
+
+  return refreshToken;
+};
+
+// Backward compatibility
+const generateToken = (id) => {
+  return generateAccessToken(id);
 };
 
 // === Đăng ký tài khoản ===
@@ -25,9 +73,24 @@ exports.signup = async (req, res) => {
     if (existing) return res.status(409).json({ message: 'Email already in use' });
 
     const user = await User.create({ name, email: email.toLowerCase(), password });
-    const token = generateToken(user._id);
+    
+    // Tạo access token và refresh token
+    const accessToken = generateAccessToken(user._id);
+    const refreshToken = generateRefreshToken();
+    
+    // Lấy IP address
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    
+    // Lưu refresh token vào database
+    await saveRefreshToken(user._id, refreshToken, ipAddress);
 
-    res.status(201).json({ message: 'Đăng ký thành công', token, user: user.profile });
+    res.status(201).json({ 
+      success: true,
+      message: 'Đăng ký thành công', 
+      accessToken,
+      refreshToken,
+      user: user.profile 
+    });
   } catch (err) {
     console.error('Signup error:', err);
     res.status(500).json({ message: err.message || 'Internal server error' });
@@ -46,8 +109,27 @@ exports.login = async (req, res) => {
     const isMatch = await user.comparePassword(password);
     if (!isMatch) return res.status(401).json({ message: 'Sai mật khẩu' });
 
-    const token = generateToken(user._id);
-    res.json({ message: 'Đăng nhập thành công', token, user: user.profile });
+    // Tạo access token và refresh token
+    const accessToken = generateAccessToken(user._id);
+    const refreshToken = generateRefreshToken();
+    
+    // Lấy IP address
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    
+    // Lưu refresh token vào database
+    await saveRefreshToken(user._id, refreshToken, ipAddress);
+
+    // Cập nhật lastLogin
+    user.lastLogin = Date.now();
+    await user.save({ validateBeforeSave: false });
+
+    res.json({ 
+      success: true,
+      message: 'Đăng nhập thành công', 
+      accessToken,
+      refreshToken,
+      user: user.profile 
+    });
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ message: err.message || 'Internal server error' });
@@ -151,5 +233,230 @@ exports.uploadAvatar = async (req, res) => {
   } catch (err) {
     console.error('Upload avatar error:', err);
     res.status(500).json({ message: err.message || 'Internal server error' });
+  }
+};
+
+// ============================================
+// REFRESH TOKEN ENDPOINTS
+// ============================================
+
+/**
+ * POST /auth/refresh
+ * Làm mới access token bằng refresh token
+ */
+exports.refreshToken = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'Refresh token is required',
+      });
+    }
+
+    // Tìm refresh token trong database
+    const tokenDoc = await RefreshToken.findOne({ token: refreshToken });
+
+    if (!tokenDoc) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid refresh token',
+        error: 'TOKEN_NOT_FOUND',
+      });
+    }
+
+    // Kiểm tra token đã bị revoke chưa
+    if (tokenDoc.revokedAt) {
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh token has been revoked',
+        error: 'TOKEN_REVOKED',
+      });
+    }
+
+    // Kiểm tra token đã hết hạn chưa
+    if (tokenDoc.expiresAt < Date.now()) {
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh token has expired',
+        error: 'TOKEN_EXPIRED',
+      });
+    }
+
+    // Kiểm tra user có tồn tại không
+    const user = await User.findById(tokenDoc.userId);
+    if (!user || !user.isActive) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not found or inactive',
+        error: 'USER_INVALID',
+      });
+    }
+
+    // Tạo access token mới
+    const newAccessToken = generateAccessToken(user._id);
+
+    // Optional: Rotation - tạo refresh token mới và revoke token cũ
+    const rotateRefreshToken = process.env.ROTATE_REFRESH_TOKEN === 'true';
+    let newRefreshToken = refreshToken;
+
+    if (rotateRefreshToken) {
+      // Revoke token cũ
+      const ipAddress = req.ip || req.connection.remoteAddress;
+      newRefreshToken = generateRefreshToken();
+      
+      tokenDoc.revokedAt = Date.now();
+      tokenDoc.revokedByIp = ipAddress;
+      tokenDoc.replacedByToken = newRefreshToken;
+      await tokenDoc.save();
+
+      // Tạo token mới
+      await saveRefreshToken(user._id, newRefreshToken, ipAddress);
+    }
+
+    res.json({
+      success: true,
+      message: 'Token refreshed successfully',
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+    });
+  } catch (err) {
+    console.error('Refresh token error:', err);
+    res.status(500).json({
+      success: false,
+      message: err.message || 'Internal server error',
+    });
+  }
+};
+
+/**
+ * POST /auth/logout
+ * Đăng xuất và revoke refresh token
+ */
+exports.logout = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'Refresh token is required',
+      });
+    }
+
+    // Tìm và revoke token
+    const tokenDoc = await RefreshToken.findOne({ token: refreshToken });
+
+    if (tokenDoc && !tokenDoc.revokedAt) {
+      const ipAddress = req.ip || req.connection.remoteAddress;
+      tokenDoc.revokedAt = Date.now();
+      tokenDoc.revokedByIp = ipAddress;
+      await tokenDoc.save();
+    }
+
+    res.json({
+      success: true,
+      message: 'Logged out successfully',
+    });
+  } catch (err) {
+    console.error('Logout error:', err);
+    res.status(500).json({
+      success: false,
+      message: err.message || 'Internal server error',
+    });
+  }
+};
+
+/**
+ * POST /auth/revoke-token
+ * Revoke một refresh token cụ thể (Admin hoặc chính user đó)
+ */
+exports.revokeToken = async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: 'Token is required',
+      });
+    }
+
+    const tokenDoc = await RefreshToken.findOne({ token });
+
+    if (!tokenDoc) {
+      return res.status(404).json({
+        success: false,
+        message: 'Token not found',
+      });
+    }
+
+    // Kiểm tra quyền: chỉ admin hoặc chính user đó mới được revoke
+    if (req.user.role !== 'admin' && tokenDoc.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden',
+      });
+    }
+
+    if (tokenDoc.revokedAt) {
+      return res.status(400).json({
+        success: false,
+        message: 'Token already revoked',
+      });
+    }
+
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    tokenDoc.revokedAt = Date.now();
+    tokenDoc.revokedByIp = ipAddress;
+    await tokenDoc.save();
+
+    res.json({
+      success: true,
+      message: 'Token revoked successfully',
+    });
+  } catch (err) {
+    console.error('Revoke token error:', err);
+    res.status(500).json({
+      success: false,
+      message: err.message || 'Internal server error',
+    });
+  }
+};
+
+/**
+ * GET /auth/tokens
+ * Lấy danh sách refresh tokens của user (Protected route)
+ */
+exports.getUserTokens = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const tokens = await RefreshToken.find({
+      userId,
+      expiresAt: { $gt: Date.now() }, // Chỉ lấy token chưa hết hạn
+    })
+      .sort({ createdAt: -1 })
+      .select('-__v');
+
+    res.json({
+      success: true,
+      count: tokens.length,
+      tokens: tokens.map((t) => ({
+        token: t.token.substring(0, 10) + '...', // Chỉ show một phần token
+        createdAt: t.createdAt,
+        expiresAt: t.expiresAt,
+        isActive: t.isActive,
+        revokedAt: t.revokedAt,
+        createdByIp: t.createdByIp,
+      })),
+    });
+  } catch (err) {
+    console.error('Get user tokens error:', err);
+    res.status(500).json({
+      success: false,
+      message: err.message || 'Internal server error',
+    });
   }
 };

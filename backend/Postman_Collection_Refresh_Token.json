@@ -1,0 +1,388 @@
+{
+  "info": {
+    "name": "SV1 - Refresh Token API",
+    "description": "Collection để test Refresh Token & Session Management - Buổi 6",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Signup (Đăng ký)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Tự động lưu tokens vào variables",
+              "if (pm.response.code === 201) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+              "    pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
+              "    pm.test('✅ Signup thành công', function () {",
+              "        pm.expect(jsonData.success).to.be.true;",
+              "        pm.expect(jsonData.accessToken).to.exist;",
+              "        pm.expect(jsonData.refreshToken).to.exist;",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Test User {{$timestamp}}\",\n  \"email\": \"test{{$timestamp}}@example.com\",\n  \"password\": \"password123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/signup",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "signup"]
+        },
+        "description": "Đăng ký tài khoản mới và nhận Access Token + Refresh Token"
+      },
+      "response": []
+    },
+    {
+      "name": "2. Login (Đăng nhập)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Tự động lưu tokens vào variables",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+              "    pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
+              "    pm.test('✅ Login thành công', function () {",
+              "        pm.expect(jsonData.success).to.be.true;",
+              "        pm.expect(jsonData.accessToken).to.exist;",
+              "        pm.expect(jsonData.refreshToken).to.exist;",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        },
+        "description": "Đăng nhập và nhận tokens"
+      },
+      "response": []
+    },
+    {
+      "name": "3. Get Profile (Protected Route)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('✅ Truy cập profile thành công', function () {",
+              "    pm.response.to.have.status(200);",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.user).to.exist;",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/profile",
+          "host": ["{{baseUrl}}"],
+          "path": ["profile"]
+        },
+        "description": "Truy cập protected route bằng Access Token"
+      },
+      "response": []
+    },
+    {
+      "name": "4. Refresh Token (Làm mới Access Token)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Tự động cập nhật tokens",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+              "    if (jsonData.refreshToken) {",
+              "        pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
+              "    }",
+              "    pm.test('✅ Refresh token thành công', function () {",
+              "        pm.expect(jsonData.success).to.be.true;",
+              "        pm.expect(jsonData.accessToken).to.exist;",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/refresh",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "refresh"]
+        },
+        "description": "Dùng Refresh Token để lấy Access Token mới"
+      },
+      "response": []
+    },
+    {
+      "name": "5. Get User Tokens",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('✅ Lấy danh sách tokens thành công', function () {",
+              "    pm.response.to.have.status(200);",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.be.true;",
+              "    pm.expect(jsonData.tokens).to.be.an('array');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/tokens",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "tokens"]
+        },
+        "description": "Xem danh sách tất cả refresh tokens của user"
+      },
+      "response": []
+    },
+    {
+      "name": "6. Revoke Token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('✅ Revoke token thành công', function () {",
+              "    pm.response.to.have.status(200);",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.be.true;",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token\": \"{{refreshToken}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/revoke-token",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "revoke-token"]
+        },
+        "description": "Revoke một refresh token cụ thể"
+      },
+      "response": []
+    },
+    {
+      "name": "7. Logout",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('✅ Logout thành công', function () {",
+              "    pm.response.to.have.status(200);",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.be.true;",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/logout",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "logout"]
+        },
+        "description": "Đăng xuất và revoke refresh token"
+      },
+      "response": []
+    },
+    {
+      "name": "8. Test Invalid Refresh Token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('✅ Reject invalid token đúng cách', function () {",
+              "    pm.response.to.have.status(401);",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.be.false;",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"invalid_token_123456\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/refresh",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "refresh"]
+        },
+        "description": "Test với token không hợp lệ - Phải trả về lỗi"
+      },
+      "response": []
+    },
+    {
+      "name": "9. Test Revoked Token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('✅ Reject revoked token đúng cách', function () {",
+              "    pm.response.to.have.status(401);",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.be.false;",
+              "    pm.expect(jsonData.error).to.equal('TOKEN_REVOKED');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/refresh",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "refresh"]
+        },
+        "description": "Test với token đã bị revoke - Phải trả về lỗi TOKEN_REVOKED (Chạy sau khi logout)"
+      },
+      "response": []
+    }
+  ]
+}
