@@ -61,6 +61,20 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/upload-avatar" element={<UploadAvatar />} />
+            <Route path="/login" element={
+              <div className="auth-forms">
+                <div className="section card">
+                  <Login onSwitchToSignUp={() => setShowLogin(false)} />
+                </div>
+              </div>
+            } />
+            <Route path="/signup" element={
+              <div className="auth-forms">
+                <div className="section card">
+                  <SignUp onSwitchToLogin={() => setShowLogin(true)} />
+                </div>
+              </div>
+            } />
             <Route
               path="/"
               element={
