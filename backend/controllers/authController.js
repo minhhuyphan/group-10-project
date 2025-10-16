@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key';
+const RefreshToken = require('../models/RefreshToken');
 
 // === Helper: Tạo token ===
 const generateToken = (id) => {
@@ -11,6 +12,15 @@ const generateToken = (id) => {
   if (!secret) throw new Error('JWT secret is not configured');
   const expiresIn = process.env.JWT_EXPIRES_IN || process.env.JWT_EXPIRE || '7d';
   return jwt.sign({ id }, secret, { expiresIn });
+};
+
+// Create and persist a refresh token for a user. Returns the plain token string.
+const createAndSaveRefreshToken = async (userId, ipAddress) => {
+  const expiresInSec = parseInt(process.env.REFRESH_TOKEN_EXPIRES_IN_SECONDS || 7 * 24 * 60 * 60); // default 7 days
+  const { doc, token } = RefreshToken.createToken(userId, expiresInSec);
+  if (ipAddress) doc.createdByIp = ipAddress;
+  await doc.save();
+  return token;
 };
 
 // === Đăng ký tài khoản ===
@@ -26,8 +36,9 @@ exports.signup = async (req, res) => {
 
     const user = await User.create({ name, email: email.toLowerCase(), password });
     const token = generateToken(user._id);
+    const refreshToken = await createAndSaveRefreshToken(user._id, req.ip);
 
-    res.status(201).json({ message: 'Đăng ký thành công', token, user: user.profile });
+    res.status(201).json({ message: 'Đăng ký thành công', token, refreshToken, user: user.profile });
   } catch (err) {
     console.error('Signup error:', err);
     res.status(500).json({ message: err.message || 'Internal server error' });
@@ -47,9 +58,59 @@ exports.login = async (req, res) => {
     if (!isMatch) return res.status(401).json({ message: 'Sai mật khẩu' });
 
     const token = generateToken(user._id);
-    res.json({ message: 'Đăng nhập thành công', token, user: user.profile });
+    const refreshToken = await createAndSaveRefreshToken(user._id, req.ip);
+    res.json({ message: 'Đăng nhập thành công', token, refreshToken, user: user.profile });
   } catch (err) {
     console.error('Login error:', err);
+    res.status(500).json({ message: err.message || 'Internal server error' });
+  }
+};
+
+// POST /auth/refresh - Rotate refresh token and issue new access token
+exports.refresh = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) return res.status(400).json({ message: 'Refresh token required' });
+
+    const hashed = crypto.createHash('sha256').update(refreshToken).digest('hex');
+    const stored = await RefreshToken.findOne({ token: hashed }).populate('user');
+    if (!stored || !stored.isActive) {
+      return res.status(401).json({ message: 'Invalid or expired refresh token' });
+    }
+
+    // rotate: revoke current and issue a new one
+    stored.revoked = new Date();
+    stored.revokedByIp = req.ip;
+
+    const newTokenPlain = await createAndSaveRefreshToken(stored.user._id, req.ip);
+    stored.replacedByToken = crypto.createHash('sha256').update(newTokenPlain).digest('hex');
+    await stored.save();
+
+    const accessToken = generateToken(stored.user._id);
+    res.json({ accessToken, refreshToken: newTokenPlain });
+  } catch (err) {
+    console.error('Refresh token error:', err);
+    res.status(500).json({ message: err.message || 'Internal server error' });
+  }
+};
+
+// POST /auth/logout - revoke refresh token (client should call with refreshToken)
+exports.logout = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) return res.status(400).json({ message: 'Refresh token required' });
+
+    const hashed = crypto.createHash('sha256').update(refreshToken).digest('hex');
+    const stored = await RefreshToken.findOne({ token: hashed });
+    if (!stored) return res.json({ message: 'Logged out', success: true });
+
+    stored.revoked = new Date();
+    stored.revokedByIp = req.ip;
+    await stored.save();
+
+    res.json({ message: 'Logged out', success: true });
+  } catch (err) {
+    console.error('Logout error:', err);
     res.status(500).json({ message: err.message || 'Internal server error' });
   }
 };
