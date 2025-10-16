@@ -1,0 +1,84 @@
+*   [33m0f068bb[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfrontend[m[33m, [m[1;31morigin/frontend[m[33m)[m Merge branch 'frontend' of https://github.com/minhhuyphan/group-10-project into frontend
+[31m|[m[32m\[m  
+[31m|[m *   [33m9784b86[m Merge pull request #20 from minhhuyphan/backend
+[31m|[m [33m|[m[34m\[m  
+[31m|[m [33m|[m *   [33m8cdc86f[m Merge pull request #19 from minhhuyphan/frontend
+[31m|[m [33m|[m [35m|[m[33m\[m  
+[31m|[m [33m|[m [35m|[m[33m/[m  
+[31m|[m [33m|[m[33m/[m[35m|[m   
+[31m|[m * [35m|[m [33md2fa2d5[m Merge pull request #18 from minhhuyphan/backend
+[31m|[m [1;31m|[m[35m\[m[35m|[m 
+[31m|[m [1;31m|[m *   [33m5084b01[m Merge pull request #17 from minhhuyphan/frontend
+[31m|[m [1;31m|[m [1;33m|[m[1;31m\[m  
+[31m|[m [1;31m|[m [1;33m|[m[1;31m/[m  
+[31m|[m [1;31m|[m[1;31m/[m[1;33m|[m   
+[31m|[m * [1;33m|[m [33m4d42eac[m Merge pull request #16 from minhhuyphan/backend
+[31m|[m [1;35m|[m[1;33m\[m[1;33m|[m 
+[31m|[m [1;35m|[m *   [33mbc5d809[m Merge pull request #15 from minhhuyphan/frontend
+[31m|[m [1;35m|[m [31m|[m[1;35m\[m  
+[31m|[m [1;35m|[m [31m|[m[1;35m/[m  
+[31m|[m [1;35m|[m[1;35m/[m[31m|[m   
+[31m|[m * [31m|[m [33m91c514d[m Merge pull request #14 from minhhuyphan/backend
+[31m|[m [33m|[m[31m\[m[31m|[m 
+[31m|[m [33m|[m *   [33m0c6e327[m Merge pull request #13 from minhhuyphan/frontend
+[31m|[m [33m|[m [35m|[m[33m\[m  
+[31m|[m [33m|[m [35m|[m[33m/[m  
+[31m|[m [33m|[m[33m/[m[35m|[m   
+[31m|[m * [35m|[m [33mb10a92a[m Merge pull request #12 from minhhuyphan/backend
+[31m|[m [1;31m|[m[35m\[m[35m|[m 
+[31m|[m [1;31m|[m *   [33m47bc134[m[33m ([m[1;31morigin/backend[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mbackend[m[33m)[m Merge pull request #11 from minhhuyphan/frontend
+[31m|[m [1;31m|[m [1;33m|[m[1;31m\[m  
+[31m|[m [1;31m|[m [1;33m|[m[1;31m/[m  
+[31m|[m [1;31m|[m[1;31m/[m[1;33m|[m   
+* [1;31m/[m [1;33m|[m [33m2c93d6f[m Đưa toàn bộ mã nguồn lên nhánh frontend
+[1;31m|[m[1;31m/[m [1;33m/[m  
+* [1;33m|[m [33m173f51b[m Merge branch 'backend' into frontend
+[1;35m|[m[1;33m\[m[1;33m|[m 
+[1;35m|[m * [33ma43d1b5[m add new file
+[1;35m|[m * [33m30d2fb4[m chore: remove node_modules from repo and add to .gitignore
+[1;35m|[m * [33maad02ca[m chore: commit local changes before push
+[1;35m|[m * [33mfba4612[m add file
+[1;35m|[m *   [33m4ceee78[m Merge pull request #9 from minhhuyphan/database
+[1;35m|[m [31m|[m[32m\[m  
+[1;35m|[m [31m|[m *   [33m706fe37[m[33m ([m[1;31morigin/database[m[33m)[m sua loi
+[1;35m|[m [31m|[m [33m|[m[34m\[m  
+[1;35m|[m [31m|[m * [34m|[m [33m7927dec[m data
+[1;35m|[m * [34m|[m [34m|[m   [33mdd00e3d[m Merge pull request #7 from minhhuyphan/frontend
+[1;35m|[m [34m|[m[36m\[m [34m\[m [34m\[m  
+[1;35m|[m [34m|[m [36m|[m[34m_[m[34m|[m[34m/[m  
+[1;35m|[m [34m|[m[34m/[m[36m|[m [34m|[m   
+[1;35m|[m * [36m|[m [34m|[m [33mdb96eb8[m update
+* [36m|[m [36m|[m [34m|[m [33m247cd56[m load file new
+[36m|[m [36m|[m[36m/[m [34m/[m  
+[36m|[m[36m/[m[36m|[m [34m|[m   
+* [36m|[m [34m|[m [33m5b8d130[m feat(frontend): add auth UI (login/signup) and styles
+[36m|[m[36m/[m [34m/[m  
+* [34m|[m [33m378480a[m update new file
+* [34m|[m [33m7bafe9d[m Merge frontend changes and resolve conflicts
+* [34m|[m [33mbc120a6[m Merge pull request #6 from minhhuyphan/database
+[1;31m|[m[34m\[m[34m|[m 
+[1;31m|[m * [33m31dad81[m cải thiện giao diên
+* [1;32m|[m   [33mfee368f[m Merge branch 'backend' of https://github.com/minhhuyphan/group-10-project into backend
+[1;33m|[m[1;34m\[m [1;32m\[m  
+[1;33m|[m * [1;32m|[m [33m13f05da[m Merge pull request #5 from minhhuyphan/database
+[1;33m|[m [1;35m|[m[1;32m\[m[1;32m|[m 
+[1;33m|[m [1;35m|[m * [33md39637c[m up sua xóa
+* [1;35m|[m [1;36m|[m [33m0f9b54f[m Fix backend server configuration and frontend port settings
+[1;35m|[m[1;35m/[m [1;36m/[m  
+* [1;36m|[m [33m72ac17b[m Merge pull request #4 from minhhuyphan/database
+[31m|[m[1;36m\[m[1;36m|[m 
+[31m|[m * [33m329573e[m kết nói csdl với frontend và backend
+* [32m|[m [33mf24fb60[m Merge pull request #3 from minhhuyphan/database
+[33m|[m[32m\[m[32m|[m 
+[33m|[m * [33mf73ce61[m update
+* [34m|[m [33m8b9f548[m Merge pull request #2 from minhhuyphan/database
+[35m|[m[34m\[m[34m|[m 
+[35m|[m * [33m7c12b03[m Feat: Tích hợp MongoDB cho API Get/Post User
+[35m|[m[35m/[m  
+*   [33m9193e20[m Merge pull request #1 from minhhuyphan/frontend
+[1;31m|[m[1;32m\[m  
+[1;31m|[m * [33m2c919c3[m add new file
+[1;31m|[m * [33m2b00eb1[m Hoạt động 4: Tạo frontend React với UserList và AddUser components
+[1;31m|[m[1;31m/[m  
+* [33md4fc869[m xong hoat dong 1 2 3
+* [33m55485d0[m[33m ([m[1;31morigin/main[m[33m)[m lần cam kết đầu tiên
