@@ -4,20 +4,16 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key';
-const SALT_ROUNDS = 10;
 
-// Hàm tạo token
+// === Helper: Tạo token ===
 const generateToken = (id) => {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    // throw a helpful error so server logs show why signing fails
-    throw new Error('JWT_SECRET is not defined in environment variables');
-  }
-  // Support multiple env var names and provide a sensible default
+  const secret = process.env.JWT_SECRET || JWT_SECRET;
+  if (!secret) throw new Error('JWT secret is not configured');
   const expiresIn = process.env.JWT_EXPIRES_IN || process.env.JWT_EXPIRE || '7d';
   return jwt.sign({ id }, secret, { expiresIn });
 };
 
+// === Đăng ký tài khoản ===
 exports.signup = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -25,56 +21,40 @@ exports.signup = async (req, res) => {
       return res.status(400).json({ message: 'Missing name/email/password' });
     }
 
-    // Check existing
-    const existing = await User.findOne({ email });
+    const existing = await User.findOne({ email: email.toLowerCase() });
     if (existing) return res.status(409).json({ message: 'Email already in use' });
 
-    const user = await User.create({ name, email, password });
+    const user = await User.create({ name, email: email.toLowerCase(), password });
     const token = generateToken(user._id);
-    // return token and basic user profile for frontend
+
     res.status(201).json({ message: 'Đăng ký thành công', token, user: user.profile });
   } catch (err) {
     console.error('Signup error:', err);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: err.message || 'Internal server error' });
   }
 };
 
+// === Đăng nhập ===
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    console.log('[login] received for:', email);
-    console.log('[login] finding user...');
     if (!email || !password) return res.status(400).json({ message: 'Missing email/password' });
 
-    // include password field (password has select: false in schema)
-    const user = await User.findOne({ email }).select('+password');
-    console.log('[login] after findOne, user=', !!user);
-    if (!user) {
-      console.log('[login] user not found');
-      return res.status(400).json({ message: 'Không tìm thấy tài khoản' });
-    }
+    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+    if (!user) return res.status(400).json({ message: 'Không tìm thấy tài khoản' });
 
-    console.log('[login] comparing password...');
-    // use comparePassword() defined on User schema
     const isMatch = await user.comparePassword(password);
-    console.log('[login] after compare, isMatch=', isMatch);
-    if (!isMatch) {
-      console.log('[login] password mismatch');
-      return res.status(400).json({ message: 'Sai mật khẩu' });
-    }
+    if (!isMatch) return res.status(401).json({ message: 'Sai mật khẩu' });
 
-    console.log('[login] generating token...');
     const token = generateToken(user._id);
-    // include user profile so frontend can immediately show user info
-    console.log('[login] Login success for:', user.email);
     res.json({ message: 'Đăng nhập thành công', token, user: user.profile });
   } catch (err) {
     console.error('Login error:', err);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: err.message || 'Internal server error' });
   }
 };
 
-// Forgot password - generate reset token and return it (for testing)
+// === Quên mật khẩu: tạo reset token ===
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -82,33 +62,43 @@ exports.forgotPassword = async (req, res) => {
 
     const user = await User.findOne({ email: email.toLowerCase(), isActive: true });
     if (!user) {
+      // tránh lộ thông tin tài khoản tồn tại hay không
       return res.json({ message: 'If email exists, a reset token was created', success: true });
     }
 
     const resetToken = user.generateResetPasswordToken();
     await user.save({ validateBeforeSave: false });
 
-  console.log('Reset token generated for:', email);
-  // Return the token only in development or when explicitly enabled for debugging
-  const debugReturn = process.env.DEBUG_RETURN_RESET_TOKEN === 'true' || process.env.NODE_ENV === 'development';
-  const payload = { message: 'Reset token created', success: true };
-  if (debugReturn) payload.resetToken = resetToken;
-  res.json(payload);
+    const debugReturn =
+      process.env.DEBUG_RETURN_RESET_TOKEN === 'true' || process.env.NODE_ENV === 'development';
+    const payload = { message: 'Reset token created', success: true };
+    if (debugReturn) payload.resetToken = resetToken;
+
+    res.json(payload);
   } catch (err) {
     console.error('Forgot password error:', err);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: err.message || 'Internal server error' });
   }
 };
 
-// Reset password with token
+// === Đặt lại mật khẩu ===
 exports.resetPassword = async (req, res) => {
   try {
     const { token, newPassword } = req.body;
-    if (!token || !newPassword) return res.status(400).json({ message: 'Token and newPassword required' });
-    if (newPassword.length < 6) return res.status(400).json({ message: 'Password too short' });
+    if (!token || !newPassword) {
+      return res.status(400).json({ message: 'Token and newPassword required' });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    }
 
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-    const user = await User.findOne({ resetPasswordToken: hashedToken, resetPasswordExpires: { $gt: Date.now() }, isActive: true });
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: Date.now() },
+      isActive: true,
+    });
+
     if (!user) return res.status(400).json({ message: 'Invalid or expired token' });
 
     user.password = newPassword;
@@ -121,54 +111,45 @@ exports.resetPassword = async (req, res) => {
     res.json({ message: 'Password reset successful', success: true });
   } catch (err) {
     console.error('Reset password error:', err);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: err.message || 'Internal server error' });
   }
 };
 
-// Upload avatar (accepts data URL base64 and saves to user's avatarData/avatarMime)
+// === Upload avatar ===
 exports.uploadAvatar = async (req, res) => {
   try {
-    // Must be authenticated - ensure req.user is set by middleware when this controller is used via protected route
     const { avatar } = req.body;
     if (!avatar) return res.status(400).json({ message: 'Avatar is required' });
 
-    // Expect data URL
+    const userId = (req.user && req.user._id) || req.body.userId;
+    if (!userId) return res.status(401).json({ message: 'Authentication required' });
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Nếu avatar là base64
     if (typeof avatar === 'string' && avatar.startsWith('data:')) {
       const matches = avatar.match(/^data:(.+);base64,(.*)$/);
       if (!matches) return res.status(400).json({ message: 'Invalid data URL' });
 
       const mime = matches[1];
       const b64 = matches[2];
-      const buf = Buffer.from(b64, 'base64');
-
-      // req.user may not be present if route isn't protected; require user id from body as fallback
-      const userId = (req.user && req.user._id) || req.body.userId;
-      if (!userId) return res.status(401).json({ message: 'Authentication required' });
-
-      const user = await User.findById(userId);
-      if (!user) return res.status(404).json({ message: 'User not found' });
-
-      user.avatarData = buf;
+      user.avatarData = Buffer.from(b64, 'base64');
       user.avatarMime = mime;
       user.avatar = null;
       await user.save();
-
       return res.json({ message: 'Avatar uploaded', success: true, user: user.profile });
     }
 
-    // If avatar is a plain URL, just save as avatar string
-    const userId = (req.user && req.user._id) || req.body.userId;
-    if (!userId) return res.status(401).json({ message: 'Authentication required' });
-    const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    // Nếu chỉ là URL
     user.avatar = avatar;
     user.avatarData = undefined;
     user.avatarMime = undefined;
     await user.save();
 
-    return res.json({ message: 'Avatar updated', success: true, user: user.profile });
+    res.json({ message: 'Avatar updated', success: true, user: user.profile });
   } catch (err) {
     console.error('Upload avatar error:', err);
-    return res.status(500).json({ message: err.message });
+    res.status(500).json({ message: err.message || 'Internal server error' });
   }
 };
