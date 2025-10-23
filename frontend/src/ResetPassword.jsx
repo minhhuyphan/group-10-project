@@ -32,7 +32,9 @@ const ResetPassword = () => {
           "Mật khẩu đã được thay đổi thành công! Đang chuyển về trang đăng nhập..."
       );
       setTimeout(() => {
+
         navigate("/");
+        navigate('/');
       }, 2000);
     } catch (err) {
       setMessage(err.response?.data?.message || err.message || "Lỗi");
