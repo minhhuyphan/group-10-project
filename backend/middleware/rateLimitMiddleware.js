@@ -12,7 +12,7 @@ const rateLimit = new Map();
  */
 const createRateLimiter = (options = {}) => {
   const {
-    windowMs = 15 * 60 * 1000, // 15 phút
+    windowMs = 1 * 60 * 1000, // 15 phút
     max = 100, // Tối đa 100 requests
     message = 'Too many requests, please try again later',
     statusCode = 429,
@@ -69,9 +69,9 @@ setInterval(() => {
 
 // Các rate limiters với cấu hình khác nhau
 const authRateLimiter = createRateLimiter({
-  windowMs: 15 * 60 * 1000, // 15 phút
+  windowMs: 1 * 60 * 1000, // 1 phút
   max: 5, // Tối đa 5 login attempts
-  message: 'Too many login attempts, please try again after 15 minutes',
+  message: 'Too many login attempts, please try again after 1 minute',
 });
 
 const refreshTokenRateLimiter = createRateLimiter({
