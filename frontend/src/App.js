@@ -7,12 +7,15 @@ import Login from "./Login";
 import Profile from "./Profile";
 import ProfilePage from "./ProfilePage";
 import AdminUsers from './AdminUsers';
+import ModeratorUsers from './ModeratorUsers';
 import ForgotPassword from './ForgotPassword';
 import ResetPassword from './ResetPassword';
 import UploadAvatar from './UploadAvatar';
 import { Routes, Route, Link } from "react-router-dom";
 import { AuthContext } from "./AuthContext";
 import { useNavigate } from "react-router-dom";
+import RequireRole from './components/RequireRole';
+import { ROLES, isAdmin, isAdminOrModerator } from './roles';
 
 function App() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -46,8 +49,11 @@ function App() {
             <Link to="/profile" className="btn btn-ghost">
               Profile
             </Link>
-            {user.role === 'admin' && (
+            {isAdmin(user) && (
               <Link to="/admin/users" className="btn btn-ghost">Admin</Link>
+            )}
+            {isAdminOrModerator(user) && (
+              <Link to="/moderator/users" className="btn btn-ghost">Moderator</Link>
             )}
           </nav>
         )}
@@ -57,7 +63,16 @@ function App() {
         <div className={`container ${!user ? "center-vert" : ""}`}>
           <Routes>
             <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/users" element={(
+              <RequireRole roles={[ROLES.ADMIN]}>
+                <AdminUsers />
+              </RequireRole>
+            )} />
+            <Route path="/moderator/users" element={(
+              <RequireRole roles={[ROLES.ADMIN, ROLES.MODERATOR]}>
+                <ModeratorUsers />
+              </RequireRole>
+            )} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/upload-avatar" element={<UploadAvatar />} />
@@ -103,6 +118,9 @@ function App() {
                           alignItems: "center",
                         }}
                       >
+                        <span className="badge" title="role" style={{ background: '#eee', color:'#333', padding: '4px 8px', borderRadius: 6 }}>
+                          Role: {user.role || 'user'}
+                        </span>
                         <button
                           onClick={() => {
                             logout();
@@ -115,20 +133,22 @@ function App() {
                       </div>
                     </div>
 
-                    <div className="section">
-                      <AddUser
-                        onUserAdded={handleUserAdded}
-                        editingUser={editingUser}
-                        onCancelEdit={handleCancelEdit}
-                      />
-                    </div>
+                    {isAdmin(user) && (
+                      <div className="section">
+                        <AddUser
+                          onUserAdded={handleUserAdded}
+                          editingUser={editingUser}
+                          onCancelEdit={handleCancelEdit}
+                        />
+                      </div>
+                    )}
                     <div className="section">
                       <UserList
                         key={refreshTrigger}
                         onEdit={handleEditUser}
                         editingUser={editingUser}
                         onCancelEdit={handleCancelEdit}
-                        showActions={false}
+                        showActions={isAdminOrModerator(user)}
                       />
                     </div>
                   </>
