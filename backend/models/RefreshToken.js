@@ -18,7 +18,7 @@ const refreshTokenSchema = new mongoose.Schema(
     expiresAt: {
       type: Date,
       required: true,
-      index: true,
+      // index: true removed - using compound indexes and TTL instead
     },
     createdByIp: {
       type: String,
