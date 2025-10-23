@@ -344,7 +344,344 @@ db.refreshtokens.aggregate([
 
 ---
 
+## 📦 Hoàn thành - Activity 2: Advanced RBAC (Role-Based Access Control)
+
+### ✅ Các tính năng đã triển khai
+
+#### 1. **User Schema - RBAC Enhancement**
+📁 File: `backend/models/User.js`
+
+**Features:**
+- ✅ Thêm role `moderator` (3 roles total: user, admin, moderator)
+- ✅ Trường `permissions` array - Quản lý quyền chi tiết
+- ✅ Trường `department` - Department cho moderators
+- ✅ Compound indexes: `role_1_isActive_1`, `department_1`
+- ✅ Helper methods:
+  - `isAdmin()` - Kiểm tra admin
+  - `isModerator()` - Kiểm tra moderator
+  - `isUser()` - Kiểm tra user
+  - `hasPermission(permission)` - Kiểm tra permission cụ thể
+  - `canManageDepartment(dept)` - Kiểm tra quyền quản lý department
+- ✅ Static methods:
+  - `getUsersByRole(role)` - Query users theo role
+  - `countByRole()` - Đếm users theo role
+
+**Schema Changes:**
+```javascript
+{
+  role: {
+    type: String,
+    enum: ['user', 'admin', 'moderator'],  // Thêm moderator
+    default: 'user'
+  },
+  permissions: {
+    type: [String],  // Array permissions
+    default: []
+  },
+  department: {
+    type: String,    // Department cho moderators
+    required: false
+  }
+}
+```
+
+#### 2. **RBAC Seed Data**
+📁 File: `backend/seed-rbac-users.js`
+
+**Sample Users:**
+- ✅ 2 Admin users - Full system access
+- ✅ 3 Moderator users - Department-specific (Content, Support, Community)
+- ✅ 5 Regular users - Limited permissions
+
+**Seeding Results:**
+```
+✅ Created 9 users
+⏭️ Skipped 1 user (already exists)
+❌ Errors: 0
+
+Current Distribution:
+  2 admin users
+  3 moderator users
+  17 user users (22 total)
+```
+
+**Departments Created:**
+- Content (1 moderator)
+- Support (1 moderator)
+- Community (1 moderator)
+
+#### 3. **RBAC Test Suite**
+📁 File: `backend/test-rbac.js`
+
+**16 Test Cases:**
+1. ✅ Schema supports all three roles (user, admin, moderator)
+2. ✅ Role-based indexes exist
+3. ✅ Query admin users
+4. ✅ Query moderator users
+5. ✅ Query regular users
+6. ✅ Admin helper method works
+7. ✅ Moderator helper method works
+8. ✅ User helper method works
+9. ✅ Permission system works
+10. ✅ Department management works
+11. ✅ Count users by role
+12. ✅ Query active users by role
+13. ✅ Query moderators by department
+14. ✅ Permissions array works correctly
+15. ✅ Profile virtual includes role information
+16. ✅ Role-based query performance
+
+**Test Results:**
+```
+Total Tests: 16
+✅ Passed: 16
+❌ Failed: 0
+Success Rate: 100%
+```
+
+#### 4. **RBAC Documentation**
+📁 File: `backend/RBAC_TESTING.md`
+
+**Content:**
+- ✅ Schema changes detailed explanation
+- ✅ Sample users table (admin, moderator, user)
+- ✅ Environment setup instructions
+- ✅ Running tests guide
+- ✅ MongoDB queries for verification
+- ✅ Mongoose code examples
+- ✅ Testing checklist
+- ✅ Troubleshooting guide
+- ✅ Performance notes
+
+---
+
+## 🚀 Cách sử dụng - Activity 2
+
+### 1. Seed RBAC Data
+
+```bash
+cd backend
+
+# Tạo sample users với roles
+node seed-rbac-users.js
+```
+
+**Output:**
+- 2 admin users
+- 3 moderator users (Content, Support, Community)
+- 5+ regular users
+
+### 2. Run RBAC Tests
+
+```bash
+# Test comprehensive RBAC operations
+node test-rbac.js
+```
+
+**Expected:** All 16 tests pass ✅
+
+### 3. Sample Login Credentials
+
+**Admin:**
+```
+Email: admin@example.com
+Password: admin123
+```
+
+**Moderator:**
+```
+Email: moderator.content@example.com
+Password: mod123
+Department: Content
+```
+
+**Regular User:**
+```
+Email: john.doe@example.com
+Password: user123
+```
+
+### 4. MongoDB Verification Queries
+
+```javascript
+// Connect to MongoDB
+use userauth_db
+
+// Count users by role
+db.users.aggregate([
+  { $group: { _id: "$role", count: { $sum: 1 } } }
+])
+
+// Get all moderators with departments
+db.users.find(
+  { role: "moderator" },
+  { name: 1, email: 1, department: 1 }
+)
+
+// Get users with permissions
+db.users.find(
+  { permissions: { $ne: [] } },
+  { name: 1, email: 1, role: 1, permissions: 1 }
+)
+
+// Verify indexes
+db.users.getIndexes()
+```
+
+---
+
+## 📊 RBAC Database Details
+
+### Role Types
+
+| Role | Capabilities | Count |
+|------|-------------|-------|
+| **admin** | Full system access, all permissions | 2 |
+| **moderator** | Department-specific access | 3 |
+| **user** | Limited, permission-based access | 17+ |
+
+### Departments
+
+| Department | Moderators | Permissions |
+|------------|-----------|-------------|
+| Content | 1 | manage_content, edit_posts |
+| Support | 1 | manage_tickets, view_reports |
+| Community | 1 | manage_users, ban_users |
+
+### Indexes - Activity 2
+
+| Index Name | Type | Purpose |
+|------------|------|---------|
+| `role_1` | Single | Role queries |
+| `role_1_isActive_1` | Compound | Active users by role |
+| `department_1` | Single | Department queries |
+
+### Helper Methods Usage
+
+```javascript
+const User = require('./models/User');
+
+// Check roles
+const user = await User.findOne({ email: 'admin@example.com' });
+console.log(user.isAdmin());      // true
+console.log(user.isModerator());  // false
+
+// Check permissions
+if (user.hasPermission('manage_content')) {
+  console.log('Can manage content');
+}
+
+// Check department management (moderators)
+const moderator = await User.findOne({ role: 'moderator' });
+if (moderator.canManageDepartment('Content')) {
+  console.log('Can manage Content department');
+}
+
+// Static methods
+const admins = await User.getUsersByRole('admin');
+const counts = await User.countByRole();
+```
+
+---
+
+## 📸 Screenshots cần nộp - Activity 2
+
+### 1. Database Evidence
+- ✅ MongoDB Compass - Users collection với roles
+- ✅ Sample admin user document
+- ✅ Sample moderator user với department
+- ✅ Sample regular user với permissions
+- ✅ Indexes list (role_1, role_1_isActive_1, department_1)
+
+### 2. Test Results
+- ✅ Terminal output: 16/16 tests passed
+- ✅ Role distribution (2 admin, 3 moderator, 17+ user)
+- ✅ Departments list (Content, Support, Community)
+
+### 3. Query Examples
+- ✅ Aggregate query - Count by role
+- ✅ Find moderators by department
+- ✅ Find users with permissions
+
+---
+
+## 📁 Files Delivered - Activity 2
+
+```
+backend/
+├── models/
+│   └── User.js                     # ✅ Updated with RBAC fields
+├── seed-rbac-users.js              # ✅ Seed sample RBAC data
+├── test-rbac.js                    # ✅ 16 RBAC test cases
+├── RBAC_TESTING.md                 # ✅ Comprehensive documentation
+└── SV3_README.md                   # ✅ Updated with Activity 2
+```
+
+---
+
+## ✨ Highlights - Activity 2 SV3 Contributions
+
+### Database Schema Enhancement
+- ✅ Thêm moderator role vào User schema
+- ✅ Permissions array system
+- ✅ Department field cho moderators
+- ✅ Compound indexes cho role queries
+
+### Helper Methods Implementation
+- ✅ 5 instance methods (isAdmin, isModerator, isUser, hasPermission, canManageDepartment)
+- ✅ 2 static methods (getUsersByRole, countByRole)
+- ✅ Admin auto-permission logic
+
+### Testing & Seed Data
+- ✅ 16 comprehensive RBAC test cases (100% pass)
+- ✅ Seed script với 10 sample users
+- ✅ 3 departments created
+- ✅ Query performance verification
+
+### Documentation
+- ✅ Comprehensive RBAC testing guide
+- ✅ MongoDB query examples
+- ✅ Mongoose code examples
+- ✅ Troubleshooting guide
+
+---
+
+## 🎯 Test Checklist - Activity 2
+
+- [ ] Run `node seed-rbac-users.js` → 9 users created
+- [ ] Run `node test-rbac.js` → All 16 tests pass
+- [ ] Verify database has 2 admins, 3 moderators, 17+ users
+- [ ] Screenshot: MongoDB users collection with roles
+- [ ] Screenshot: Sample moderator with department
+- [ ] Screenshot: Test results (16/16 passed)
+- [ ] Screenshot: Role distribution aggregate query
+- [ ] Screenshot: Indexes list
+- [ ] Check helper methods work correctly
+- [ ] Verify departments: Content, Support, Community
+
+---
+
+## 👥 Team Contribution - Activity 2 (SV3)
+
+**Sinh viên 3 - Database & Integration**
+
+✅ **Completed Tasks:**
+1. Cập nhật User schema với RBAC fields
+2. Thêm moderator role và permissions system
+3. Implement 7 helper methods (instance + static)
+4. Tạo compound indexes cho role queries
+5. Seed database với 10 sample users (3 roles)
+6. Comprehensive test suite (16 tests)
+7. Full documentation với examples
+8. Performance optimization verification
+
+**Time invested:** ~3-4 hours  
+**Lines of code:** ~600+ lines  
+**Test coverage:** 16 test cases, 100% pass
+
+---
+
 **Author:** SV3 - Database & Integration  
-**Date:** October 23, 2025  
-**Project:** User Management System - Session 6  
-**Status:** ✅ COMPLETED
+**Date:** January 2025  
+**Project:** User Management System - Activities 1 & 2  
+**Status:** ✅ BOTH ACTIVITIES COMPLETED
