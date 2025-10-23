@@ -99,6 +99,38 @@ const requireAdmin = (req, res, next) => {
 };
 
 /**
+ * Middleware kiểm tra role linh hoạt
+ * @param {string|Array<string>} roles - Role hoặc mảng các role được phép
+ * @returns {Function} Middleware function
+ */
+const checkRole = (roles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required',
+        error: 'NO_AUTH',
+      });
+    }
+
+    // Chuyển đổi roles thành mảng nếu là string
+    const allowedRoles = Array.isArray(roles) ? roles : [roles];
+
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: `Access denied. Required roles: ${allowedRoles.join(', ')}`,
+        error: 'INSUFFICIENT_PERMISSIONS',
+        userRole: req.user.role,
+        requiredRoles: allowedRoles,
+      });
+    }
+
+    next();
+  };
+};
+
+/**
  * Optional authentication - không bắt buộc có token
  */
 const optionalAuth = async (req, res, next) => {
@@ -127,5 +159,6 @@ const optionalAuth = async (req, res, next) => {
 module.exports = {
   authenticateAccessToken,
   requireAdmin,
+  checkRole,
   optionalAuth,
 };
