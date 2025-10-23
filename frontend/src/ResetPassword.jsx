@@ -1,12 +1,11 @@
-
-import React, { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import api from './api';
+import React, { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import api from "./api";
 
 const ResetPassword = () => {
-  const [token, setToken] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [token, setToken] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
   const navigate = useNavigate();
@@ -15,22 +14,28 @@ const ResetPassword = () => {
     e.preventDefault();
     setMessage(null);
     if (password !== confirmPassword) {
-      setMessage('Mật khẩu xác nhận không khớp!');
+      setMessage("Mật khẩu xác nhận không khớp!");
       return;
     }
     if (password.length < 6) {
-      setMessage('Mật khẩu phải có ít nhất 6 ký tự!');
+      setMessage("Mật khẩu phải có ít nhất 6 ký tự!");
       return;
     }
     setLoading(true);
     try {
-      const res = await api.post('/auth/reset-password', { token, newPassword: password });
-      setMessage(res.data?.message || 'Mật khẩu đã được thay đổi thành công! Đang chuyển về trang đăng nhập...');
+      const res = await api.post("/auth/reset-password", {
+        token,
+        newPassword: password,
+      });
+      setMessage(
+        res.data?.message ||
+          "Mật khẩu đã được thay đổi thành công! Đang chuyển về trang đăng nhập..."
+      );
       setTimeout(() => {
-        navigate('/login');
+        navigate("/");
       }, 2000);
     } catch (err) {
-      setMessage(err.response?.data?.message || err.message || 'Lỗi');
+      setMessage(err.response?.data?.message || err.message || "Lỗi");
     } finally {
       setLoading(false);
     }
@@ -40,12 +45,12 @@ const ResetPassword = () => {
   const location = useLocation();
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const t = params.get('token');
+    const t = params.get("token");
     if (t) setToken(t);
   }, [location.search]);
 
   return (
-    <div className="card" style={{ maxWidth: 480, margin: '20px auto' }}>
+    <div className="card" style={{ maxWidth: 480, margin: "20px auto" }}>
       <h3>Đổi mật khẩu bằng token</h3>
       <form onSubmit={handleSubmit} className="paypal-form">
         <input
@@ -76,24 +81,45 @@ const ResetPassword = () => {
           required
           minLength={6}
           style={{
-            borderColor: confirmPassword && password !== confirmPassword ? '#d32f2f' : ''
+            borderColor:
+              confirmPassword && password !== confirmPassword ? "#d32f2f" : "",
           }}
         />
 
         {confirmPassword && password !== confirmPassword && (
-          <div style={{ color: '#d32f2f', fontSize: '14px', marginTop: '-8px', marginBottom: '8px' }}>
+          <div
+            style={{
+              color: "#d32f2f",
+              fontSize: "14px",
+              marginTop: "-8px",
+              marginBottom: "8px",
+            }}
+          >
             ⚠️ Mật khẩu xác nhận không khớp
           </div>
         )}
-        {confirmPassword && password === confirmPassword && confirmPassword.length >= 6 && (
-          <div style={{ color: '#2e7d32', fontSize: '14px', marginTop: '-8px', marginBottom: '8px' }}>
-            ✓ Mật khẩu khớp
-          </div>
-        )}
+        {confirmPassword &&
+          password === confirmPassword &&
+          confirmPassword.length >= 6 && (
+            <div
+              style={{
+                color: "#2e7d32",
+                fontSize: "14px",
+                marginTop: "-8px",
+                marginBottom: "8px",
+              }}
+            >
+              ✓ Mật khẩu khớp
+            </div>
+          )}
 
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <button className="btn btn-primary create-btn" type="submit" disabled={loading}>
-            {loading ? 'Đang...' : 'Đổi mật khẩu'}
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <button
+            className="btn btn-primary create-btn"
+            type="submit"
+            disabled={loading}
+          >
+            {loading ? "Đang..." : "Đổi mật khẩu"}
           </button>
         </div>
       </form>
