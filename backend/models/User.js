@@ -30,8 +30,18 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["user", "admin"],
+      enum: ["user", "admin", "moderator"],
       default: "user",
+    },
+    permissions: {
+      type: [String],
+      default: [],
+      // Possible permissions: 'read', 'write', 'delete', 'manage_users', 'manage_content'
+    },
+    department: {
+      type: String,
+      default: null,
+      // For moderators: which department/area they manage
     },
     avatar: {
       type: String,
@@ -83,6 +93,8 @@ const userSchema = new mongoose.Schema(
 // Indexes
 userSchema.index({ role: 1 });
 userSchema.index({ isActive: 1 });
+userSchema.index({ role: 1, isActive: 1 }); // Compound index for role-based queries
+userSchema.index({ department: 1 }); // Index for department queries
 
 // Virtual for user's full profile
 userSchema.virtual("profile").get(function () {
@@ -217,6 +229,44 @@ userSchema.statics.authenticate = async function (email, password) {
   } catch (error) {
     throw error;
   }
+};
+
+// RBAC Helper Methods
+userSchema.methods.isAdmin = function () {
+  return this.role === 'admin';
+};
+
+userSchema.methods.isModerator = function () {
+  return this.role === 'moderator';
+};
+
+userSchema.methods.isUser = function () {
+  return this.role === 'user';
+};
+
+userSchema.methods.hasPermission = function (permission) {
+  if (this.role === 'admin') return true; // Admin has all permissions
+  return this.permissions.includes(permission);
+};
+
+userSchema.methods.canManageDepartment = function (department) {
+  if (this.role === 'admin') return true;
+  if (this.role === 'moderator' && this.department === department) return true;
+  return false;
+};
+
+// Static: Get users by role
+userSchema.statics.getUsersByRole = async function (role) {
+  return this.find({ role, isActive: true }).select('-password');
+};
+
+// Static: Count users by role
+userSchema.statics.countByRole = async function () {
+  return this.aggregate([
+    { $match: { isActive: true } },
+    { $group: { _id: '$role', count: { $sum: 1 } } },
+    { $sort: { _id: 1 } }
+  ]);
 };
 
 module.exports = mongoose.model("User", userSchema);
