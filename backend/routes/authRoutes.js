@@ -5,6 +5,7 @@ const {
   login,
   forgotPassword,
   resetPassword,
+  validateResetToken,
   uploadAvatar,
   refreshToken,
   logout,
@@ -18,8 +19,11 @@ const { authenticateAccessToken } = require('../middleware/authMiddleware');
 // ===== Public routes =====
 router.post('/signup', signup);
 router.post('/login', login);
+
+// ===== Password Reset routes =====
 router.post('/forgot-password', forgotPassword);
-router.post('/reset-password', resetPassword);
+router.get('/validate-reset-token/:token', validateResetToken);
+router.post('/reset-password/:token', resetPassword);
 
 // ===== Refresh Token routes =====
 router.post('/refresh', refreshToken);

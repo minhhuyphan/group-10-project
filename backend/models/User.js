@@ -265,6 +265,23 @@ userSchema.methods.canManageDepartment = function (department) {
   return false;
 };
 
+// Generate password reset token
+userSchema.methods.generateResetPasswordToken = function () {
+  const crypto = require('crypto');
+  
+  // Generate reset token
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  
+  // Hash token and set to resetPasswordToken field
+  this.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+  
+  // Set expire time (1 hour)
+  this.resetPasswordExpires = Date.now() + 60 * 60 * 1000;
+  
+  // Return unhashed token (to be sent via email)
+  return resetToken;
+};
+
 // Static: Get users by role
 userSchema.statics.getUsersByRole = async function (role) {
   return this.find({ role, isActive: true }).select('-password');
