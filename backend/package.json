@@ -9,7 +9,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "seed:rbac": "node seed-rbac-data.js",
     "test:rbac": "node test-rbac-apis.js",
-    "test:avatar": "node test-avatar-upload.js"
+    "test:avatar": "node test-avatar-upload.js",
+    "test:forgot-password": "node test-forgot-password.js"
   },
   "keywords": [],
   "author": "",
@@ -27,6 +28,7 @@
     "jsonwebtoken": "^9.0.0",
     "mongoose": "^8.19.0",
     "multer": "^2.0.2",
+    "nodemailer": "^6.10.1",
     "nodemon": "^3.1.10",
     "sharp": "^0.34.4"
   }

@@ -460,3 +460,56 @@ exports.getUserTokens = async (req, res) => {
     });
   }
 };
+
+// === Validate Reset Token: Kiểm tra token hợp lệ ===
+exports.validateResetToken = async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: 'Reset token is required'
+      });
+    }
+
+    // Hash the token to compare with stored token
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    // Find user with valid reset token
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired reset token'
+      });
+    }
+
+    // Check if user is active
+    if (!user.isActive) {
+      return res.status(400).json({
+        success: false,
+        message: 'Account is deactivated'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Reset token is valid',
+      email: user.email // Return email for form pre-fill
+    });
+
+  } catch (err) {
+    console.error('Validate reset token error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Error validating reset token'
+    });
+  }
+};
+
+

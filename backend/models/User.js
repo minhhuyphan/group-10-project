@@ -54,10 +54,12 @@ const userSchema = new mongoose.Schema(
     avatarData: {
       type: Buffer,
       default: null,
+      select: false,
     },
     avatarMime: {
       type: String,
       default: null,
+      select: false,
     },
     age: {
       type: Number,
@@ -144,6 +146,10 @@ userSchema.pre("save", async function (next) {
 // Compare password
 userSchema.methods.comparePassword = async function (candidatePassword) {
   try {
+    // Guard: if password field is not loaded, signal no match to avoid throwing
+    if (!this.password || typeof candidatePassword !== 'string') {
+      return false;
+    }
     return await bcrypt.compare(candidatePassword, this.password);
   } catch (error) {
     throw error;
@@ -259,6 +265,23 @@ userSchema.methods.canManageDepartment = function (department) {
   return false;
 };
 
+// Generate password reset token
+userSchema.methods.generateResetPasswordToken = function () {
+  const crypto = require('crypto');
+  
+  // Generate reset token
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  
+  // Hash token and set to resetPasswordToken field
+  this.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+  
+  // Set expire time (1 hour)
+  this.resetPasswordExpires = Date.now() + 60 * 60 * 1000;
+  
+  // Return unhashed token (to be sent via email)
+  return resetToken;
+};
+
 // Static: Get users by role
 userSchema.statics.getUsersByRole = async function (role) {
   return this.find({ role, isActive: true }).select('-password');
@@ -272,5 +295,34 @@ userSchema.statics.countByRole = async function () {
     { $sort: { _id: 1 } }
   ]);
 };
+
+// Defensive projection: always exclude heavy/sensitive fields unless explicitly included
+function excludeHeavyFields(query) {
+  // Only add projection if user didn't explicitly request avatarData/avatarMime
+  const fields = query._fields;
+  // Always exclude heavy avatar binary fields and noisy metadata unless explicitly requested
+  if (!fields || (!fields.avatarData && !fields.avatarMime)) {
+    query.select('-__v -resetPasswordToken -resetPasswordExpires -avatarData -avatarMime');
+  }
+  // IMPORTANT: do NOT force-exclude password here; some flows (login) intentionally select('+password')
+}
+
+userSchema.pre('find', function () { excludeHeavyFields(this); });
+userSchema.pre('findOne', function () { excludeHeavyFields(this); });
+userSchema.pre('findById', function () { excludeHeavyFields(this); });
+
+// Global JSON transform to remove sensitive/heavy fields from all responses
+userSchema.set('toJSON', {
+  virtuals: true,
+  transform: (doc, ret) => {
+    delete ret.password;
+    delete ret.__v;
+    delete ret.resetPasswordToken;
+    delete ret.resetPasswordExpires;
+    delete ret.avatarData; // ensure raw binary never leaks
+    delete ret.avatarMime;
+    return ret;
+  }
+});
 
 module.exports = mongoose.model("User", userSchema);
