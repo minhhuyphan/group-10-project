@@ -47,6 +47,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    avatarCloudinaryId: {
+      type: String,
+      default: null,
+    },
     avatarData: {
       type: Buffer,
       default: null,
