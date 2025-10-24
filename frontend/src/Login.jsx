@@ -1,8 +1,10 @@
 import React, { useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import { AuthContext } from "./AuthContext";
 
 const Login = ({ onSwitchToSignUp }) => {
   const { login } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -70,9 +72,21 @@ const Login = ({ onSwitchToSignUp }) => {
           </div>
 
           <div style={{ textAlign: "center", marginTop: 12 }}>
-            <a className="muted" href="#/forgot-password">
+            <button
+              type="button"
+              className="muted"
+              onClick={() => navigate("/forgot-password")}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#0070ba",
+                cursor: "pointer",
+                textDecoration: "none",
+                fontSize: "inherit"
+              }}
+            >
               Quên mật khẩu?
-            </a>
+            </button>
           </div>
 
           <div className="or-row">
