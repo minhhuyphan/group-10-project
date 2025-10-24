@@ -46,6 +46,9 @@ function App() {
             <Link to="/profile" className="btn btn-ghost">
               Profile
             </Link>
+            <Link to="/upload-avatar" className="btn btn-ghost">
+              Upload Avatar
+            </Link>
             {user.role === 'admin' && (
               <Link to="/admin/users" className="btn btn-ghost">Admin</Link>
             )}

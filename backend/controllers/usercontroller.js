@@ -16,7 +16,21 @@ exports.getUsers = async (req, res) => {
   try {
     // 3. Dùng User.find() để lấy tất cả user từ MongoDB
     // Lệnh này tương đương với "SELECT * FROM users" trong SQL
-    const users = await User.find();
+    let users = await User.find()
+      // Loại bỏ các trường nặng/nhạy cảm để tránh trả về dữ liệu lớn
+      .select('-password -avatarData -avatarMime -resetPasswordToken -refreshTokens -__v')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Phòng thủ bổ sung: đảm bảo không rò rỉ avatarData/avatarMime ngay cả khi projection bị bỏ qua
+    users = users.map(u => {
+      if (u && (u.avatarData || u.avatarMime)) {
+        delete u.avatarData;
+        delete u.avatarMime;
+      }
+      return u;
+    });
+
     res.json(users);
   } catch (err) {
     // 4. Xử lý lỗi nếu có sự cố khi truy vấn database
@@ -140,7 +154,18 @@ exports.getUsersWithRBAC = async (req, res) => {
     }
     // Admin có thể xem tất cả (không cần query filter)
 
-    const users = await User.find(query).select('-password -resetPasswordToken');
+    let users = await User.find(query)
+      .select('-password -resetPasswordToken -avatarData -avatarMime -__v')
+      .lean();
+
+    // Phòng thủ bổ sung
+    users = users.map(u => {
+      if (u && (u.avatarData || u.avatarMime)) {
+        delete u.avatarData;
+        delete u.avatarMime;
+      }
+      return u;
+    });
     
     res.json({
       success: true,
