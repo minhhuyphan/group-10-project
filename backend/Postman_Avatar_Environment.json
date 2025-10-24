@@ -1,0 +1,35 @@
+{
+  "id": "avatar-upload-env",
+  "name": "Avatar Upload Environment",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001",
+      "description": "Backend server URL",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "description": "JWT Access Token from login response",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "description": "User ID from login response",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "description": "JWT Refresh Token from login response",
+      "type": "secret",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}

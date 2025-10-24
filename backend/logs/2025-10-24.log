@@ -1,0 +1,14 @@
+{"timestamp":"2025-10-24T16:03:12.190Z","level":"ERROR","message":"GET /auth/login","method":"GET","url":"/auth/login","statusCode":404,"duration":"2ms","ip":"::1","userAgent":"PostmanRuntime/7.49.0"}
+{"timestamp":"2025-10-24T16:03:18.022Z","level":"ERROR","message":"GET /api/login","method":"GET","url":"/api/login","statusCode":404,"duration":"0ms","ip":"::1","userAgent":"PostmanRuntime/7.49.0"}
+{"timestamp":"2025-10-24T16:03:46.370Z","level":"INFO","message":"POST /auth/login","method":"POST","url":"/auth/login","statusCode":200,"duration":"270ms","ip":"::1","userAgent":"PostmanRuntime/7.49.0"}
+{"timestamp":"2025-10-24T16:04:51.751Z","level":"ERROR","message":"POST /users/avatar","method":"POST","url":"/users/avatar","statusCode":404,"duration":"1ms","ip":"::1","userAgent":"PostmanRuntime/7.49.0"}
+{"timestamp":"2025-10-24T16:06:12.291Z","level":"ERROR","message":"POST /users/avatar","method":"POST","url":"/users/avatar","statusCode":404,"duration":"2ms","ip":"::1","userAgent":"PostmanRuntime/7.49.0"}
+{"timestamp":"2025-10-24T16:09:11.327Z","level":"ERROR","message":"POST /users/avatar","method":"POST","url":"/users/avatar","statusCode":404,"duration":"1ms","ip":"::1","userAgent":"PostmanRuntime/7.49.0"}
+{"timestamp":"2025-10-24T16:09:38.919Z","level":"ERROR","message":"POST /auth/login","method":"POST","url":"/auth/login","statusCode":400,"duration":"84ms","ip":"::1","userAgent":"PostmanRuntime/7.49.0"}
+{"timestamp":"2025-10-24T16:09:56.004Z","level":"INFO","message":"POST /auth/login","method":"POST","url":"/auth/login","statusCode":200,"duration":"258ms","ip":"::1","userAgent":"PostmanRuntime/7.49.0"}
+{"timestamp":"2025-10-24T16:10:13.407Z","level":"ERROR","message":"POST /users","method":"POST","url":"/users","statusCode":404,"duration":"1ms","ip":"::1","userAgent":"PostmanRuntime/7.49.0"}
+{"timestamp":"2025-10-24T16:10:22.392Z","level":"ERROR","message":"POST /user","method":"POST","url":"/user","statusCode":404,"duration":"0ms","ip":"::1","userAgent":"PostmanRuntime/7.49.0"}
+{"timestamp":"2025-10-24T16:10:32.811Z","level":"ERROR","message":"POST /auth/users","method":"POST","url":"/auth/users","statusCode":404,"duration":"2ms","ip":"::1","userAgent":"PostmanRuntime/7.49.0"}
+{"timestamp":"2025-10-24T16:10:40.070Z","level":"INFO","message":"POST /api/users","method":"POST","url":"/api/users","statusCode":201,"duration":"3ms","ip":"::1","userAgent":"PostmanRuntime/7.49.0"}
+{"timestamp":"2025-10-24T16:10:56.250Z","level":"ERROR","message":"POST /api/users/avatar","method":"POST","url":"/api/users/avatar","statusCode":400,"duration":"93ms","ip":"::1","userAgent":"PostmanRuntime/7.49.0"}
+{"timestamp":"2025-10-24T16:11:08.520Z","level":"INFO","message":"POST /api/users/avatar","method":"POST","url":"/api/users/avatar","statusCode":200,"duration":"3152ms","ip":"::1","userAgent":"PostmanRuntime/7.49.0"}
