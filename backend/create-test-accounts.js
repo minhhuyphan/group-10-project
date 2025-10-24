@@ -3,7 +3,8 @@
 
 const axios = require('axios');
 
-const BASE_URL = 'http://localhost:3001';
+// Point directly to the auth routes mounted in server.js under '/auth'
+const BASE_URL = 'http://localhost:3001/auth';
 
 // Test accounts to create
 const testAccounts = [
@@ -38,7 +39,7 @@ const createAccount = async (account) => {
     console.log(`Creating account: ${account.email}`);
     
     // First signup
-    const signupResponse = await axios.post(`${BASE_URL}/signup`, {
+  const signupResponse = await axios.post(`${BASE_URL}/signup`, {
       name: account.name,
       email: account.email,
       password: account.password,
@@ -50,7 +51,7 @@ const createAccount = async (account) => {
     // If not admin, we need to update role
     if (account.role !== 'user') {
       // Login as the new user first to get their ID
-      const loginResponse = await axios.post(`${BASE_URL}/login`, {
+  const loginResponse = await axios.post(`${BASE_URL}/login`, {
         email: account.email,
         password: account.password
       });
@@ -75,7 +76,7 @@ const createAccount = async (account) => {
 
 const testLogin = async (email, password) => {
   try {
-    const response = await axios.post(`${BASE_URL}/login`, {
+  const response = await axios.post(`${BASE_URL}/login`, {
       email,
       password
     });

@@ -1,7 +1,5 @@
 import { useState, useCallback } from 'react';
-import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:3001';
+import api from '../api';
 
 // Custom hook for managing users state
 export const useUsers = () => {
@@ -14,8 +12,8 @@ export const useUsers = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get(`${API_BASE_URL}/users`);
-      setUsers(response.data);
+  const response = await api.get(`/users`);
+  setUsers(response.data);
       console.log(`✅ Loaded ${response.data.length} users successfully`);
       return response.data;
     } catch (err) {
@@ -31,7 +29,7 @@ export const useUsers = () => {
   // Add new user
   const addUser = useCallback(async (userData) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/users`, userData);
+  const response = await api.post(`/users`, userData);
       setUsers(prevUsers => [...prevUsers, response.data]);
       console.log('✅ User added successfully:', response.data);
       return response.data;
@@ -45,7 +43,7 @@ export const useUsers = () => {
   // Update user
   const updateUser = useCallback(async (userId, userData) => {
     try {
-      const response = await axios.put(`${API_BASE_URL}/users/${userId}`, userData);
+  const response = await api.put(`/users/${userId}`, userData);
       setUsers(prevUsers => 
         prevUsers.map(user => 
           (user._id || user.id) === userId ? response.data : user
@@ -63,7 +61,7 @@ export const useUsers = () => {
   // Delete user
   const deleteUser = useCallback(async (userId) => {
     try {
-      await axios.delete(`${API_BASE_URL}/users/${userId}`);
+  await api.delete(`/users/${userId}`);
       setUsers(prevUsers => 
         prevUsers.filter(user => (user._id || user.id) !== userId)
       );
