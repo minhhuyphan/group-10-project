@@ -25,6 +25,23 @@ const formatDateTime = (iso) => {
   }
 };
 
+const formatRelative = (iso) => {
+  try {
+    const d = new Date(iso);
+    const diffMs = Date.now() - d.getTime();
+    const s = Math.floor(diffMs / 1000);
+    if (s < 60) return `${s}s trước`;
+    const m = Math.floor(s / 60);
+    if (m < 60) return `${m} phút trước`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h} giờ trước`;
+    const days = Math.floor(h / 24);
+    return `${days} ngày trước`;
+  } catch (_) {
+    return '';
+  }
+};
+
 export default function AdminLogs() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -34,6 +51,7 @@ export default function AdminLogs() {
   const [userId, setUserId] = useState('');
   const [search, setSearch] = useState('');
   const [limit, setLimit] = useState(50);
+  const [expanded, setExpanded] = useState({});
 
   const isToday = useMemo(() => {
     return date === new Date().toISOString().slice(0, 10);
@@ -87,10 +105,31 @@ export default function AdminLogs() {
     fetchLogs();
   };
 
+  const clearFilters = () => {
+    setAction('');
+    setUserId('');
+    setSearch('');
+    setLimit(50);
+  };
+
+  const toggleRow = (idx) => {
+    setExpanded((prev) => ({ ...prev, [idx]: !prev[idx] }));
+  };
+
   return (
     <div className="card" style={{ width: '100%', maxWidth: 1200, margin: '0 auto' }}>
-      <h2 style={{ marginTop: 0 }}>Admin Activity Logs</h2>
-      <form onSubmit={onSubmit} style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', alignItems: 'end' }}>
+      <div className="logs-header">
+        <div>
+          <h2 style={{ margin: 0 }}>Admin Activity Logs</h2>
+          <p className="muted" style={{ margin: '6px 0 0 0' }}>Giám sát hoạt động người dùng và demo rate limiting</p>
+        </div>
+        <div className="actions">
+          <button type="button" className="btn btn-ghost" onClick={() => setDate(new Date().toISOString().slice(0, 10))}>Hôm nay</button>
+          <button type="button" className="btn refresh-btn" onClick={fetchLogs} disabled={loading}>{loading ? 'Đang tải…' : 'Refresh'}</button>
+        </div>
+      </div>
+
+      <form onSubmit={onSubmit} className="logs-filters">
         <div>
           <label className="label" htmlFor="date">Date</label>
           <input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
@@ -108,7 +147,7 @@ export default function AdminLogs() {
           <label className="label" htmlFor="userId">User ID</label>
           <input id="userId" placeholder="User ObjectId" value={userId} onChange={(e) => setUserId(e.target.value)} />
         </div>
-        <div style={{ gridColumn: 'span 2' }}>
+        <div className="logs-search">
           <label className="label" htmlFor="search">Search</label>
           <input id="search" placeholder="Search in logs (JSON match)" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
@@ -116,8 +155,9 @@ export default function AdminLogs() {
           <label className="label" htmlFor="limit">Limit</label>
           <input id="limit" type="number" min={10} max={200} step={10} value={limit} onChange={(e) => setLimit(Number(e.target.value))} />
         </div>
-        <div>
-          <button className="btn" type="submit" disabled={loading}>{loading ? 'Loading…' : 'Load logs'}</button>
+        <div className="logs-buttons">
+          <button className="btn btn-primary" type="submit" disabled={loading}>{loading ? 'Loading…' : 'Load logs'}</button>
+          <button type="button" className="btn btn-ghost" onClick={clearFilters}>Clear</button>
         </div>
       </form>
 
@@ -127,40 +167,62 @@ export default function AdminLogs() {
         </div>
       )}
 
-      <div style={{ overflowX: 'auto', marginTop: 16 }}>
-        <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div className="logs-table-wrap">
+        <table className="logs-table">
           <thead>
             <tr>
-              <th style={{ textAlign: 'left' }}>Time</th>
-              <th style={{ textAlign: 'left' }}>User</th>
-              <th style={{ textAlign: 'left' }}>Action</th>
-              <th style={{ textAlign: 'left' }}>Status</th>
-              <th style={{ textAlign: 'left' }}>IP</th>
-              <th style={{ textAlign: 'left' }}>Details</th>
+              <th>Time</th>
+              <th>User</th>
+              <th>Action</th>
+              <th>Status</th>
+              <th>IP</th>
+              <th>Details</th>
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 && (
+            {loading && (
+              <tr>
+                <td colSpan={6} className="muted">Đang tải dữ liệu…</td>
+              </tr>
+            )}
+            {!loading && rows.length === 0 && (
               <tr>
                 <td colSpan={6} style={{ padding: 12, opacity: 0.7 }}>No logs</td>
               </tr>
             )}
-            {rows.map((r, idx) => (
-              <tr key={idx}>
-                <td style={{ whiteSpace: 'nowrap' }}>{formatDateTime(r.timestamp)}</td>
-                <td>
-                  {r.userId || 'anonymous'}
-                </td>
-                <td>{r.action}</td>
-                <td>{r.details?.success === false ? 'failed' : (r.status || (r.statusCode && r.statusCode >= 400 ? 'failed' : 'success'))}</td>
-                <td>{r.ip || r.ipAddress || '-'}</td>
-                <td>
-                  <pre style={{ margin: 0, maxWidth: 480, overflow: 'auto', whiteSpace: 'pre-wrap' }}>
-                    {JSON.stringify(r.details || {}, null, 2)}
-                  </pre>
-                </td>
-              </tr>
-            ))}
+            {rows.map((r, idx) => {
+              const status = r.details?.success === false ? 'failed' : (r.status || (r.statusCode && r.statusCode >= 400 ? 'failed' : 'success'));
+              const isOpen = !!expanded[idx];
+              return (
+                <tr key={idx} className={isOpen ? 'expanded' : ''}>
+                  <td>
+                    <div className="time-col">
+                      <div>{formatDateTime(r.timestamp)}</div>
+                      <small className="muted">{formatRelative(r.timestamp)}</small>
+                    </div>
+                  </td>
+                  <td className="code mono">{r.userId || 'anonymous'}</td>
+                  <td><span className="badge badge-action">{r.action}</span></td>
+                  <td>
+                    <span className={`badge ${status === 'failed' ? 'badge-failed' : 'badge-success'}`}>{status}</span>
+                  </td>
+                  <td className="code mono">{r.ip || r.ipAddress || '-'}</td>
+                  <td>
+                    <div className="details-col">
+                      {!isOpen && (
+                        <pre className="details-preview">{JSON.stringify(r.details || {}, null, 2).slice(0, 160)}{JSON.stringify(r.details || {}, null, 2).length > 160 ? '…' : ''}</pre>
+                      )}
+                      {isOpen && (
+                        <pre className="details-full">{JSON.stringify(r.details || {}, null, 2)}</pre>
+                      )}
+                      <div className="row-actions">
+                        <button type="button" className="btn btn-ghost" onClick={() => toggleRow(idx)}>{isOpen ? 'Thu gọn' : 'Xem chi tiết'}</button>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
