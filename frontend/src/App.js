@@ -59,11 +59,9 @@ function App() {
       <main className="App-main">
         <div className={`container ${!user ? "center-vert" : ""}`}>
           <Routes>
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/admin/users" element={<AdminUsers />} />
+            {/* Public routes - MUST be before the "/" catch-all */}
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/upload-avatar" element={<UploadAvatar />} />
             <Route path="/login" element={
               <div className="auth-forms">
                 <div className="section card">
@@ -78,6 +76,13 @@ function App() {
                 </div>
               </div>
             } />
+            
+            {/* Protected routes */}
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/upload-avatar" element={<UploadAvatar />} />
+            
+            {/* Home route - catch-all LAST */}
             <Route
               path="/"
               element={
