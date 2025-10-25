@@ -7,6 +7,7 @@ import Login from "./Login";
 import Profile from "./Profile";
 import ProfilePage from "./ProfilePage";
 import AdminUsers from './AdminUsers';
+import AdminLogs from './AdminLogs';
 import ForgotPassword from './ForgotPassword';
 import ResetPassword from './ResetPassword';
 import UploadAvatar from './UploadAvatar';
@@ -50,7 +51,10 @@ function App() {
               Upload Avatar
             </Link>
             {user.role === 'admin' && (
-              <Link to="/admin/users" className="btn btn-ghost">Admin</Link>
+              <>
+                <Link to="/admin/users" className="btn btn-ghost">Admin</Link>
+                <Link to="/admin/logs" className="btn btn-ghost">Logs</Link>
+              </>
             )}
           </nav>
         )}
@@ -80,6 +84,7 @@ function App() {
             {/* Protected routes */}
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/logs" element={<AdminLogs />} />
             <Route path="/upload-avatar" element={<UploadAvatar />} />
             
             {/* Home route - catch-all LAST */}
