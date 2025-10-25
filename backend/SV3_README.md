@@ -1268,3 +1268,55 @@ backend/
 **Date:** January 2025  
 **Project:** User Management System - Activities 1, 2, 3 & 4  
 **Status:** âœ… ALL FOUR ACTIVITIES COMPLETED
+
+##  Hoàn thành - Activity 5: User Activity Logging & Rate Limiting
+
+###  Các tính nang dã tri?n khai
+
+#### 1. **ActivityLog Model - Comprehensive Activity Tracking**
+ File: `backend/models/ActivityLog.js`
+
+**15 Action Types:** login, logout, signup, forgot_password, reset_password, update_profile, upload_avatar, refresh_token, failed_login, account_locked, password_changed, email_changed, view_profile, admin_action, other
+
+**Indexes:** 11 total (5 single + 5 compound + 1 TTL 90 days)
+**Static Methods:** 7 (getByUser, getByAction, getFailedLoginsByIP, countLoginAttempts, getRecentActivity, getStats, isSuspiciousIP)
+
+#### 2. **RateLimit Model - Brute Force Protection**
+ File: `backend/models/RateLimit.js`
+
+**Indexes:** 3 total (unique compound + single + TTL 24 hours)
+**Static Methods:** 7 (recordAttempt, isBlocked, blockIdentifier, unblockIdentifier, resetAttempts, getBlocked, cleanExpiredBlocks)
+
+#### 3. **Test Suite - 21 Tests, 100% Pass Rate**
+ File: `backend/test-activity-logging-db.js`
+
+**Results:**
+```
+Total Tests: 21
+ Passed: 21
+ Failed: 0
+Success Rate: 100%
+Sample Data: 35 logs, 10 rate limits, 5 blocked IPs
+```
+
+#### 4. **Documentation - 500+ lines**
+ File: `backend/ACTIVITY_LOGGING_TESTING.md`
+
+---
+
+##  Team Contribution - Activity 5 (SV3)
+
+ **Completed:**
+- ActivityLog model: 15 action types, 11 indexes, 7 methods
+- RateLimit model: 3 indexes, 7 methods  
+- 21 comprehensive tests (100% pass)
+- 500+ lines documentation
+- Integration examples
+
+**Time:** ~4-5 hours | **Code:** ~1,200+ lines | **Tests:** 21/21 
+
+---
+
+**Author:** SV3 - Database & Integration  
+**Date:** January 2025  
+**Status:**  ALL FIVE ACTIVITIES COMPLETED (1-5)
