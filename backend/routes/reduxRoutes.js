@@ -25,7 +25,7 @@ router.get('/verify-token',
 );
 
 // Check route access permissions  
-router.get('/check-access/:route(*)',
+router.post('/check-access',
   authenticateAccessToken,
   generalRateLimiter,
   activityLogger('ROUTE_ACCESS_CHECK'),

@@ -400,9 +400,17 @@ exports.getAllUsers = async (req, res) => {
 /**
  * Check Route Access (Helper for Protected Routes)
  */
-exports.checkRouteAccess = async (req, res) => {
+const checkRouteAccess = async (req, res) => {
   try {
-    const { route } = req.params;
+    // Get route from request body
+    const { route } = req.body;
+    if (!route) {
+      return res.status(400).json({
+        success: false,
+        message: 'Route is required',
+        hasAccess: false
+      });
+    }
     const user = await User.findById(req.user.id).select('-password');
     
     if (!user) {
@@ -467,4 +475,14 @@ exports.checkRouteAccess = async (req, res) => {
       hasAccess: false
     });
   }
+};
+
+// Export all controller functions  
+module.exports = {
+  verifyToken: exports.verifyToken,
+  getProfile: exports.getProfile,
+  updateProfile: exports.updateProfile,
+  getAdminDashboard: exports.getAdminDashboard,
+  getAllUsers: exports.getAllUsers,
+  checkRouteAccess
 };

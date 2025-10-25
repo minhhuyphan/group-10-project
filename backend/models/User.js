@@ -278,8 +278,8 @@ userSchema.statics.authenticate = async function (email, password) {
 };
 
 // RBAC Helper Methods
-userSchema.methods.isAdmin = function () {
-  return this.role === 'admin';
+userSchema.methods.hasRole = function (role) {
+  return this.role === role || this.isAdmin === true;
 };
 
 userSchema.methods.isModerator = function () {
