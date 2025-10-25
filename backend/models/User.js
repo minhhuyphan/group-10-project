@@ -90,6 +90,42 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    // Redux & Protected Routes support fields
+    isAdmin: {
+      type: Boolean,
+      default: false,
+    },
+    bio: {
+      type: String,
+      maxlength: [500, "Bio không được quá 500 ký tự"],
+      default: "",
+    },
+    phone: {
+      type: String,
+      match: [/^[\d\s\-\+\(\)]+$/, "Số điện thoại không hợp lệ"],
+      default: "",
+    },
+    address: {
+      type: String,
+      maxlength: [200, "Địa chỉ không được quá 200 ký tự"],
+      default: "",
+    },
+    preferences: {
+      theme: {
+        type: String,
+        enum: ["light", "dark", "auto"],
+        default: "light",
+      },
+      language: {
+        type: String,
+        default: "vi",
+      },
+      notifications: {
+        email: { type: Boolean, default: true },
+        push: { type: Boolean, default: true },
+        sms: { type: Boolean, default: false },
+      },
+    },
   },
   {
     timestamps: true,
