@@ -4,6 +4,13 @@ const express = require("express");
 const cors = require("cors");
 const app = express();
 
+// Import middlewares
+const { requestLogger, errorLogger } = require('./middleware/loggingMiddleware');
+const { generalRateLimiter, authRateLimiter, refreshTokenRateLimiter } = require('./middleware/rateLimitMiddleware');
+
+// Import Cloudinary config
+const { testConnection } = require('./config/cloudinary');
+
 // Middleware
 app.use(
   cors({
@@ -11,27 +18,30 @@ app.use(
     credentials: true,
   })
 );
+
 // Increase JSON body size limit to allow base64 avatar data to be sent
-// Increase JSON/urlencoded body size limit to allow large base64 avatar data
 app.use(express.json({ limit: "50mb" }));
-// Also support urlencoded payloads if needed (forms)
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-// Simple request logger for debugging
-app.use((req, res, next) => {
-  console.log(
-    `${new Date().toISOString()} -> ${req.method} ${req.originalUrl}`
-  );
-  next();
-});
+// Apply logging middleware
+app.use(requestLogger);
+
+// Apply general rate limiting
+app.use(generalRateLimiter);
 
 // Routes
 const userRoutes = require("./routes/user");
-app.use("/", userRoutes);
+app.use("/api", userRoutes);
 
-// Authentication routes
+// Authentication routes với rate limiting riêng
 const authRoutes = require("./routes/authRoutes");
+app.use("/auth/login", authRateLimiter);
+app.use("/auth/refresh", refreshTokenRateLimiter);
 app.use("/auth", authRoutes);
+
+// Avatar routes
+const avatarRoutes = require("./routes/avatarRoutes");
+app.use("/api/users", avatarRoutes);
 const jwt = require("jsonwebtoken");
 const User = require("./models/User");
 
@@ -182,6 +192,10 @@ const connectDB = async () => {
     await mongoose.connect(mongoURI);
     isMongoConnected = true;
     console.log("✅ Connected to MongoDB successfully!");
+
+    // Test Cloudinary connection
+    console.log("Testing Cloudinary connection...");
+    await testConnection();
 
     // Create default admin user if not exists
     const User = require("./models/User");

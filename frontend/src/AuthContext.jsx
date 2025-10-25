@@ -1,10 +1,11 @@
 import React, { createContext, useState, useEffect } from 'react';
-import api from './api';
+import api, { getAccessToken as apiGetAccessToken, setAccessToken as apiSetAccessToken, getRefreshToken as apiGetRefreshToken, setRefreshToken as apiSetRefreshToken, clearTokens as apiClearTokens } from './api';
 
 export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [token, setToken] = useState(() => localStorage.getItem('token') || null);
+  const [accessToken, setAccessToken] = useState(() => apiGetAccessToken() || null);
+  const [refreshToken, setRefreshToken] = useState(() => apiGetRefreshToken() || null);
   const [user, setUser] = useState(() => {
     try {
       const raw = localStorage.getItem('user');
@@ -16,22 +17,31 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(() => {
     // If there's a token in localStorage we should consider the context initializing
-    return !!localStorage.getItem('token');
+    return !!apiGetAccessToken();
   });
 
   useEffect(() => {
-    if (token) {
-      localStorage.setItem('token', token);
+    if (accessToken) {
+      apiSetAccessToken(accessToken);
     } else {
-      localStorage.removeItem('token');
+      // clear only access token; keep refresh if any until explicit logout
+      localStorage.removeItem('accessToken');
     }
-  }, [token]);
+  }, [accessToken]);
+
+  useEffect(() => {
+    if (refreshToken) {
+      apiSetRefreshToken(refreshToken);
+    } else {
+      localStorage.removeItem('refreshToken');
+    }
+  }, [refreshToken]);
 
   // When token becomes available, refresh user profile from server
   useEffect(() => {
     let mounted = true;
     const fetchProfile = async () => {
-      if (!token) {
+      if (!accessToken) {
         setInitializing(false);
         return;
       }
@@ -51,7 +61,7 @@ export const AuthProvider = ({ children }) => {
     };
     fetchProfile();
     return () => { mounted = false; };
-  }, [token]);
+  }, [accessToken]);
 
   useEffect(() => {
     if (user) {
@@ -76,9 +86,11 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     try {
       const res = await api.post('/auth/login', { email, password });
-      // Expecting { token, user } from backend
-      const { token: receivedToken, user: receivedUser } = res.data;
-      if (receivedToken) setToken(receivedToken);
+      // Support both legacy { token, user } and new { accessToken, refreshToken, user }
+      const { accessToken: at, refreshToken: rt, token: legacyToken, user: receivedUser } = res.data || {};
+      const finalAT = at || legacyToken || null;
+      if (finalAT) setAccessToken(finalAT);
+      if (rt) setRefreshToken(rt);
       if (receivedUser) setUser(receivedUser);
       return res.data;
     } finally {
@@ -86,13 +98,20 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    setToken(null);
+  const logout = async () => {
+    try {
+      const rt = apiGetRefreshToken();
+      // Best-effort revoke; ignore errors if backend not implemented
+      await api.post('/auth/logout', { refreshToken: rt });
+    } catch (_) {}
+    setAccessToken(null);
+    setRefreshToken(null);
+    apiClearTokens();
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ token, user, loading, initializing, signup, login, logout, setUser }}>
+    <AuthContext.Provider value={{ accessToken, refreshToken, user, loading, initializing, signup, login, logout, setUser }}>
       {children}
     </AuthContext.Provider>
   );

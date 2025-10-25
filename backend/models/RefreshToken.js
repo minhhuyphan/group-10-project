@@ -1,36 +1,61 @@
+// backend/models/RefreshToken.js
 const mongoose = require('mongoose');
-const crypto = require('crypto');
 
 const refreshTokenSchema = new mongoose.Schema(
   {
-    token: { type: String, required: true }, // store a hashed token
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    expires: { type: Date, required: true },
-    createdByIp: { type: String, default: null },
-    revoked: { type: Date, default: null },
-    revokedByIp: { type: String, default: null },
-    replacedByToken: { type: String, default: null },
+    token: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+    },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
+    expiresAt: {
+      type: Date,
+      required: true,
+      // index: true removed - using compound indexes and TTL instead
+    },
+    createdByIp: {
+      type: String,
+      default: null,
+    },
+    revokedAt: {
+      type: Date,
+      default: null,
+    },
+    revokedByIp: {
+      type: String,
+      default: null,
+    },
+    replacedByToken: {
+      type: String,
+      default: null,
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
-// Virtuals / helpers
+// Virtual để check token còn hoạt động không
 refreshTokenSchema.virtual('isExpired').get(function () {
-  return Date.now() >= this.expires;
+  return Date.now() >= this.expiresAt;
 });
 
 refreshTokenSchema.virtual('isActive').get(function () {
-  return !this.revoked && Date.now() < this.expires;
+  return !this.revokedAt && !this.isExpired;
 });
 
-// Static helper to create a new refresh token for a user
-refreshTokenSchema.statics.createToken = function (userId, expiresInSeconds = 7 * 24 * 60 * 60) {
-  const token = crypto.randomBytes(40).toString('hex');
-  const expires = new Date(Date.now() + expiresInSeconds * 1000);
-  // store hashed token
-  const hashed = crypto.createHash('sha256').update(token).digest('hex');
-  const doc = new this({ token: hashed, user: userId, expires });
-  return { doc, token };
-};
+// Index compound cho tối ưu query
+refreshTokenSchema.index({ userId: 1, expiresAt: 1 });
+refreshTokenSchema.index({ token: 1, expiresAt: 1 });
+
+// Tự động xóa token đã hết hạn (TTL Index)
+refreshTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 module.exports = mongoose.model('RefreshToken', refreshTokenSchema);
