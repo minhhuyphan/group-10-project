@@ -39,6 +39,10 @@ app.use("/auth/login", authRateLimiter);
 app.use("/auth/refresh", refreshTokenRateLimiter);
 app.use("/auth", authRoutes);
 
+// Activity Log routes - SV1
+const activityRoutes = require("./routes/activityRoutes");
+app.use("/api/activity", activityRoutes);
+
 // Avatar routes
 const avatarRoutes = require("./routes/avatarRoutes");
 app.use("/api/users", avatarRoutes);
