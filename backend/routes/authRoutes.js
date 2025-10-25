@@ -15,19 +15,21 @@ const {
 
 // Import middleware
 const { authenticateAccessToken } = require('../middleware/authMiddleware');
+const { loginRateLimiter, activityLogger } = require('../middleware/activityLogMiddleware');
+const { generalRateLimiter, refreshTokenRateLimiter } = require('../middleware/rateLimitMiddleware');
 
 // ===== Public routes =====
-router.post('/signup', signup);
-router.post('/login', login);
+router.post('/signup', generalRateLimiter, activityLogger('USER_SIGNUP'), signup);
+router.post('/login', loginRateLimiter(), activityLogger('USER_LOGIN'), login);
 
 // ===== Password Reset routes =====
-router.post('/forgot-password', forgotPassword);
-router.get('/validate-reset-token/:token', validateResetToken);
-router.post('/reset-password/:token', resetPassword);
+router.post('/forgot-password', generalRateLimiter, activityLogger('FORGOT_PASSWORD'), forgotPassword);
+router.get('/validate-reset-token/:token', generalRateLimiter, validateResetToken);
+router.post('/reset-password/:token', generalRateLimiter, activityLogger('RESET_PASSWORD'), resetPassword);
 
 // ===== Refresh Token routes =====
-router.post('/refresh', refreshToken);
-router.post('/logout', logout);
+router.post('/refresh', refreshTokenRateLimiter, activityLogger('TOKEN_REFRESH'), refreshToken);
+router.post('/logout', activityLogger('USER_LOGOUT'), logout);
 
 // ===== Protected routes =====
 router.post('/upload-avatar', authenticateAccessToken, uploadAvatar);
