@@ -188,7 +188,7 @@ app.get('/_debug_routes', (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 10000;
 
 // Global variable to track MongoDB connection status
 let isMongoConnected = false;
