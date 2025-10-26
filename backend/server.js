@@ -79,9 +79,9 @@ app.use("/auth", authRoutes);
 const activityRoutes = require("./routes/activityRoutes");
 app.use("/api/activity", activityRoutes);
 
-// Redux Support routes - SV1 Backend Support (mount at /api for /profile, /verify-token, etc.)
+// Redux Support routes - SV1 Backend Support (separated to avoid conflicts)
 const reduxRoutes = require("./routes/reduxRoutes");
-app.use("/api", reduxRoutes);
+app.use("/api/redux", reduxRoutes);
 
 // Avatar routes - mount at /api/avatars to avoid conflicts
 const avatarRoutes = require("./routes/avatarRoutes");
