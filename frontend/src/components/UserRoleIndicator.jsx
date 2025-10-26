@@ -1,9 +1,9 @@
-import React, { useContext } from 'react';
-import { AuthContext } from '../AuthContext';
+import React from 'react';
+import { useSelector } from 'react-redux';
 
 // Role-based UI component to show user permissions and status
 const UserRoleIndicator = () => {
-  const { user } = useContext(AuthContext);
+  const user = useSelector((state) => state.auth.user);
 
   if (!user) {
     return (
@@ -176,7 +176,7 @@ const UserRoleIndicator = () => {
 
 // Permission check hook
 export const usePermissions = () => {
-  const { user } = useContext(AuthContext);
+  const user = useSelector((state) => state.auth.user);
   
   const hasPermission = (permission) => {
     if (!user) return false;
