@@ -10,9 +10,7 @@ router.post('/users', userController.createUser);
 router.put('/users/:id', userController.updateUser);   // PUT
 router.delete('/users/:id', userController.deleteUser); // DELETE
 
-// Authentication routes
-router.post('/signup', authController.signup);
-router.post('/login', authController.login);
+// Authentication routes are handled by authRoutes.js - removed duplicates
 
 // ============ RBAC ROUTES ============
 
