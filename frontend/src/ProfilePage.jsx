@@ -1,10 +1,12 @@
-import React, { useContext, useState, useRef } from "react";
-import { AuthContext } from "./AuthContext";
+import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { logoutThunk, setUser } from "./store/authSlice";
 import api from "./api";
 
 export default function ProfilePage() {
-  const { user, setUser, logout } = useContext(AuthContext);
+  const dispatch = useDispatch();
+  const user = useSelector((state) => state.auth.user);
   const navigate = useNavigate();
   const [localAge, setLocalAge] = useState(user?.age || "");
   const [avatarPreview, setAvatarPreview] = useState(
@@ -71,7 +73,7 @@ export default function ProfilePage() {
     try {
       const res = await api.put("/profile", { avatar: avatarPreview });
       if (res.data && res.data.user) {
-        setUser && setUser(res.data.user);
+        dispatch(setUser(res.data.user));
         setMessage("Ảnh đã được lưu");
       } else setMessage("Đã lưu ảnh");
     } catch (err) {
@@ -132,7 +134,7 @@ export default function ProfilePage() {
             </button>
             <button
               onClick={() => {
-                logout && logout();
+                dispatch(logoutThunk());
                 navigate("/");
               }}
               className="btn btn-ghost"

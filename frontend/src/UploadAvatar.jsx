@@ -1,9 +1,11 @@
-import React, { useState, useRef, useContext } from 'react';
+import React, { useState, useRef } from 'react';
 import api from './api';
-import { AuthContext } from './AuthContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { setUser } from './store/authSlice';
 
 const UploadAvatar = () => {
-  const { user, setUser } = useContext(AuthContext);
+  const dispatch = useDispatch();
+  const user = useSelector((state) => state.auth.user);
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -43,7 +45,7 @@ const UploadAvatar = () => {
       const updatedUser = data.data?.user;
       const avatarUrl = data.data?.avatarUrl;
       if (updatedUser) {
-        setUser && setUser(updatedUser);
+        dispatch(setUser(updatedUser));
       }
       if (avatarUrl) {
         setPreview(avatarUrl);

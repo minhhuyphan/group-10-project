@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import api from "./api";
-import { AuthContext } from "./AuthContext";
+import { useSelector } from "react-redux";
 
 const UserList = ({ editingUser, onEdit, onCancelEdit, showActions = true }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(null); // Track which user is being deleted
-  const { user: currentUser } = useContext(AuthContext);
+  const currentUser = useSelector((state) => state.auth.user);
 
   // Enhanced fetch users with better error handling
   const fetchUsers = async () => {
