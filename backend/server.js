@@ -14,7 +14,12 @@ const { testConnection } = require('./config/cloudinary');
 // Middleware
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
+    origin: [
+      "http://localhost:3000", 
+      "http://127.0.0.1:3000",
+      "https://group-10-project.vercel.app", // Production frontend
+      "https://*.vercel.app" // All Vercel preview deployments
+    ],
     credentials: true,
   })
 );
