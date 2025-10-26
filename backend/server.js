@@ -62,7 +62,12 @@ app.use("/api", userRoutes);
 
 // Add direct /users route for frontend compatibility
 const userController = require("./controllers/usercontroller");
+const { authenticateAccessToken, checkRole } = require("./middleware/authMiddleware");
+
 app.get("/users", userController.getUsers);
+app.post("/users", authenticateAccessToken, checkRole(['admin', 'moderator']), userController.createUser);
+app.put("/users/:id", authenticateAccessToken, checkRole(['admin', 'moderator']), userController.updateUser);
+app.delete("/users/:id", authenticateAccessToken, checkRole(['admin']), userController.deleteUser);
 
 // Authentication routes với rate limiting riêng
 const authRoutes = require("./routes/authRoutes");
