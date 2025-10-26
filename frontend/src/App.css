@@ -106,6 +106,99 @@ html,
   box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
 }
 
+/* ===== Admin Logs styles ===== */
+.logs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.logs-filters {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  align-items: end;
+}
+.logs-filters .logs-search {
+  grid-column: span 2;
+}
+.logs-buttons {
+  display: flex;
+  gap: 8px;
+}
+.logs-table-wrap {
+  overflow-x: auto;
+  margin-top: 16px;
+}
+.logs-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.logs-table thead th {
+  text-align: left;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 1;
+  border-bottom: 1px solid #eef1f6;
+  padding: 10px;
+}
+.logs-table tbody td {
+  padding: 10px;
+  border-bottom: 1px solid #f1f4f9;
+  vertical-align: top;
+}
+.logs-table tbody tr:hover {
+  background: #fafcff;
+}
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.badge-success {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+.badge-failed {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+}
+.badge-action {
+  background: rgba(79, 70, 229, 0.12);
+  color: #4f46e5;
+}
+.code.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+}
+.details-col {
+  display: grid;
+  gap: 6px;
+}
+.details-preview,
+.details-full {
+  margin: 0;
+  max-width: 680px;
+  overflow: auto;
+  white-space: pre-wrap;
+  background: #fbfdff;
+  border: 1px solid #eef1f6;
+  border-radius: 8px;
+  padding: 8px;
+}
+.row-actions {
+  display: flex;
+  gap: 8px;
+}
+.time-col {
+  display: grid;
+}
+
 /* Auth forms area */
 .auth-forms {
   display: flex;

@@ -1,10 +1,12 @@
-import React, { useState, useContext } from "react";
-import { AuthContext } from "./AuthContext";
+import React, { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { signupThunk, clearError } from "./store/authSlice";
 
 const SignUp = ({ onSwitchToLogin }) => {
-  const { signup } = useContext(AuthContext);
+  const dispatch = useDispatch();
+  const { loading, error } = useSelector((state) => state.auth);
+  
   const [form, setForm] = useState({ name: "", email: "", password: "" });
-  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
 
   const handleChange = (e) =>
@@ -13,20 +15,19 @@ const SignUp = ({ onSwitchToLogin }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage(null);
-    setLoading(true);
-    try {
-      await signup(form);
+    dispatch(clearError());
+    
+    const result = await dispatch(signupThunk(form));
+    
+    if (signupThunk.fulfilled.match(result)) {
       setMessage("Đăng ký thành công. Bạn sẽ được chuyển sang trang đăng nhập...");
       setForm({ name: "", email: "", password: "" });
       // After short delay, switch to login form if provided
       setTimeout(() => {
         if (onSwitchToLogin) onSwitchToLogin();
       }, 1500);
-    } catch (err) {
-      const msg = err.response?.data?.message || err.message || "Lỗi đăng ký";
-      setMessage(msg);
-    } finally {
-      setLoading(false);
+    } else {
+      setMessage(result.payload || "Lỗi đăng ký");
     }
   };
 

@@ -90,6 +90,42 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    // Redux & Protected Routes support fields
+    isAdmin: {
+      type: Boolean,
+      default: false,
+    },
+    bio: {
+      type: String,
+      maxlength: [500, "Bio không được quá 500 ký tự"],
+      default: "",
+    },
+    phone: {
+      type: String,
+      match: [/^[\d\s\-\+\(\)]+$/, "Số điện thoại không hợp lệ"],
+      default: "",
+    },
+    address: {
+      type: String,
+      maxlength: [200, "Địa chỉ không được quá 200 ký tự"],
+      default: "",
+    },
+    preferences: {
+      theme: {
+        type: String,
+        enum: ["light", "dark", "auto"],
+        default: "light",
+      },
+      language: {
+        type: String,
+        default: "vi",
+      },
+      notifications: {
+        email: { type: Boolean, default: true },
+        push: { type: Boolean, default: true },
+        sms: { type: Boolean, default: false },
+      },
+    },
   },
   {
     timestamps: true,
@@ -117,14 +153,20 @@ userSchema.virtual("profile").get(function () {
   }
 
   return {
+    _id: this._id,
     id: this._id,
     name: this.name,
     email: this.email,
     role: this.role,
+    isAdmin: this.isAdmin || false,
     avatar: avatarValue,
     age: this.age,
+    bio: this.bio,
+    phone: this.phone,
+    address: this.address,
     isActive: this.isActive,
     lastLogin: this.lastLogin,
+    preferences: this.preferences,
     createdAt: this.createdAt,
     updatedAt: this.updatedAt,
   };
@@ -242,8 +284,8 @@ userSchema.statics.authenticate = async function (email, password) {
 };
 
 // RBAC Helper Methods
-userSchema.methods.isAdmin = function () {
-  return this.role === 'admin';
+userSchema.methods.hasRole = function (role) {
+  return this.role === role || this.isAdmin === true;
 };
 
 userSchema.methods.isModerator = function () {

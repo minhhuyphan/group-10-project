@@ -2,20 +2,22 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
-import { AuthProvider } from './AuthContext';
 import { BrowserRouter } from 'react-router-dom';
 import reportWebVitals from './reportWebVitals';
+// Redux imports
+import { Provider } from 'react-redux';
+import store from './store';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 // NOTE: Removed localStorage.clear() to persist login sessions
-// and allow forgot-password flow to work properly
+// Activity 6: Wrapped with Redux Provider for state management
 root.render(
   <React.StrictMode>
-    <AuthProvider>
+    <Provider store={store}>
       <BrowserRouter>
         <App />
       </BrowserRouter>
-    </AuthProvider>
+    </Provider>
   </React.StrictMode>
 );
 

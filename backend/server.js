@@ -39,6 +39,14 @@ app.use("/auth/login", authRateLimiter);
 app.use("/auth/refresh", refreshTokenRateLimiter);
 app.use("/auth", authRoutes);
 
+// Activity Log routes - SV1
+const activityRoutes = require("./routes/activityRoutes");
+app.use("/api/activity", activityRoutes);
+
+// Redux Support routes - SV1 Backend Support
+const reduxRoutes = require("./routes/reduxRoutes");
+app.use("/api", reduxRoutes);
+
 // Avatar routes
 const avatarRoutes = require("./routes/avatarRoutes");
 app.use("/api/users", avatarRoutes);
@@ -197,25 +205,9 @@ const connectDB = async () => {
     console.log("Testing Cloudinary connection...");
     await testConnection();
 
-    // Create default admin user if not exists
-    const User = require("./models/User");
-    try {
-      const adminExists = await User.findOne({ email: "admin@example.com" });
-      if (!adminExists) {
-        const adminUser = new User({
-          name: "Admin User",
-          email: "admin@example.com",
-          password: "admin123",
-          role: "admin",
-        });
-        await adminUser.save();
-        console.log(
-          "✅ Default admin user created: admin@example.com / admin123"
-        );
-      }
-    } catch (adminError) {
-      console.log("⚠️ Admin user creation skipped:", adminError.message);
-    }
+    // Setup default users for Redux Protected Routes testing
+    const { setupDefaultUsers } = require("./middleware/setupAdmin");
+    await setupDefaultUsers();
   } catch (error) {
     console.error("❌ MongoDB connection error:", error.message);
     console.log("🔄 Falling back to mock data mode");

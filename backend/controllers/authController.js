@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { sendPasswordResetEmail } = require('../services/emailService');
+const { logActivity } = require('../middleware/activityLogMiddleware');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key';
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'dev_refresh_secret_key';
@@ -105,10 +106,26 @@ exports.login = async (req, res) => {
     if (!email || !password) return res.status(400).json({ message: 'Missing email/password' });
 
     const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
-    if (!user) return res.status(400).json({ message: 'Không tìm thấy tài khoản' });
+    if (!user) {
+      // Log failed login attempt - user not found
+      logActivity(email, 'LOGIN_FAILED', new Date(), {
+        ip: req.ip || req.connection.remoteAddress,
+        userAgent: req.get('user-agent'),
+        details: { reason: 'User not found', email }
+      });
+      return res.status(400).json({ message: 'Không tìm thấy tài khoản' });
+    }
 
     const isMatch = await user.comparePassword(password);
-    if (!isMatch) return res.status(401).json({ message: 'Sai mật khẩu' });
+    if (!isMatch) {
+      // Log failed login attempt - wrong password
+      logActivity(user._id.toString(), 'LOGIN_FAILED', new Date(), {
+        ip: req.ip || req.connection.remoteAddress,
+        userAgent: req.get('user-agent'),
+        details: { reason: 'Wrong password', email }
+      });
+      return res.status(401).json({ message: 'Sai mật khẩu' });
+    }
 
     // Tạo access token và refresh token
     const accessToken = generateAccessToken(user._id);
@@ -124,6 +141,22 @@ exports.login = async (req, res) => {
     user.lastLogin = Date.now();
     await user.save({ validateBeforeSave: false });
 
+    // Clear login attempts if using rate limiter
+    if (req.clearLoginAttempts) {
+      req.clearLoginAttempts();
+    }
+
+    // Log successful login
+    logActivity(user._id.toString(), 'LOGIN_SUCCESS', new Date(), {
+      ip: ipAddress,
+      userAgent: req.get('user-agent'),
+      details: { 
+        email: user.email,
+        name: user.name,
+        lastLogin: user.lastLogin
+      }
+    });
+
     res.json({ 
       success: true,
       message: 'Đăng nhập thành công', 
@@ -133,6 +166,14 @@ exports.login = async (req, res) => {
     });
   } catch (err) {
     console.error('Login error:', err);
+    
+    // Log error
+    logActivity(req.body.email || 'unknown', 'LOGIN_ERROR', new Date(), {
+      ip: req.ip || req.connection.remoteAddress,
+      userAgent: req.get('user-agent'),
+      details: { error: err.message }
+    });
+    
     res.status(500).json({ message: err.message || 'Internal server error' });
   }
 };

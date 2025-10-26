@@ -1,8 +1,12 @@
 import axios from 'axios';
 
-// Base API instance using CRA proxy via '/api'
+// Determine backend base URL from environment (for production) or use proxy in dev
+const BACKEND_BASE = process.env.REACT_APP_API_URL || '';
+
+// Single API instance
 const api = axios.create({
-  baseURL: '/api',
+  // If BACKEND_BASE is set (production), we'll use absolute base and rewrite paths below
+  baseURL: BACKEND_BASE || '/api',
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -30,6 +34,22 @@ export const clearTokens = () => {
 // ---- Attach Authorization header on every request ----
 api.interceptors.request.use(
   (config) => {
+    // In production (absolute baseURL), rewrite special endpoints that
+    // are not under '/api' on the backend (auth and profile)
+    try {
+      if (BACKEND_BASE) {
+        if (typeof config.url === 'string') {
+          if (config.url.startsWith('/api/auth/')) {
+            config.url = config.url.replace('/api', ''); // -> /auth/...
+          } else if (config.url === '/api/profile' || config.url.startsWith('/api/profile')) {
+            config.url = config.url.replace('/api', ''); // -> /profile
+          }
+        }
+      }
+    } catch (_) {
+      // noop
+    }
+
     try {
       const token = getAccessToken();
       if (token) {
@@ -67,8 +87,8 @@ api.interceptors.response.use(
         // Single-flight refresh
         if (!isRefreshing) {
           isRefreshing = true;
-          // Use a fresh axios call to bypass this instance interceptors
-          refreshPromise = axios.post('/api/auth/refresh', { refreshToken });
+          // Use the same api instance so URL rewriting and baseURL apply
+          refreshPromise = api.post('/api/auth/refresh', { refreshToken });
         }
 
         const res = await refreshPromise;
