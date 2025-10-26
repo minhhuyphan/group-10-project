@@ -136,32 +136,38 @@ app.get("/cors-test", (req, res) => {
 app.get("/_debug_routes", (req, res) => {
   try {
     const routes = [];
-    app._router.stack.forEach((middleware) => {
-      if (middleware.route) {
-        // routes registered directly on the app
-        const methods = Object.keys(middleware.route.methods)
-          .join(",")
-          .toUpperCase();
-        routes.push({ path: middleware.route.path, methods });
-      } else if (
-        middleware.name === "router" &&
-        middleware.handle &&
-        middleware.handle.stack
-      ) {
-        // router middleware
-        middleware.handle.stack.forEach((handler) => {
-          if (handler.route) {
-            const methods = Object.keys(handler.route.methods)
-              .join(",")
-              .toUpperCase();
-            routes.push({ path: handler.route.path, methods });
-          }
-        });
-      }
+    if (app._router && app._router.stack) {
+      app._router.stack.forEach((middleware) => {
+        if (middleware.route) {
+          // routes registered directly on the app
+          const methods = Object.keys(middleware.route.methods)
+            .join(",")
+            .toUpperCase();
+          routes.push({ path: middleware.route.path, methods });
+        } else if (
+          middleware.name === "router" &&
+          middleware.handle &&
+          middleware.handle.stack
+        ) {
+          // router middleware
+          middleware.handle.stack.forEach((handler) => {
+            if (handler.route) {
+              const methods = Object.keys(handler.route.methods)
+                .join(",")
+                .toUpperCase();
+              routes.push({ path: handler.route.path, methods });
+            }
+          });
+        }
+      });
+    }
+    res.json({ 
+      totalRoutes: routes.length,
+      routes: routes,
+      message: "Available API endpoints"
     });
-    res.json({ routes });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message, stack: err.stack });
   }
 });
 
