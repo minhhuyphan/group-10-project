@@ -8,11 +8,11 @@ const { authenticateAccessToken } = require('../middleware/authMiddleware');
 const { upload, handleUploadError, validateFileUpload } = require('../middleware/uploadMiddleware');
 
 /**
- * POST /api/users/avatar
+ * POST /api/avatars/upload
  * Upload avatar cho user hiện tại
  * Requires: Authentication, File upload
  */
-router.post('/avatar', 
+router.post('/upload', 
   authenticateAccessToken,  // Xác thực JWT
   upload.single('avatar'),  // Upload single file với field name 'avatar'
   handleUploadError,        // Xử lý lỗi upload
@@ -21,18 +21,18 @@ router.post('/avatar',
 );
 
 /**
- * GET /api/users/:id/avatar
+ * GET /api/avatars/:id
  * Lấy avatar URL của user
  * Public route (không cần authentication)
  */
-router.get('/:id/avatar', getAvatar);
+router.get('/:id', getAvatar);
 
 /**
- * DELETE /api/users/avatar
+ * DELETE /api/avatars/delete
  * Xóa avatar của user hiện tại
  * Requires: Authentication
  */
-router.delete('/avatar',
+router.delete('/delete',
   authenticateAccessToken,  // Xác thực JWT
   deleteAvatar             // Controller xử lý xóa
 );

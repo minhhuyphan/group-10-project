@@ -23,9 +23,8 @@ const allowedOrigins = [
   "http://localhost:3000", 
   "http://127.0.0.1:3000",
   "https://group-10-project-nine.vercel.app", // Frontend production URL
-  process.env.FRONTEND_PRODUCTION_URL,
-  "https://group-10-project-nine.vercel.app" // Ensure Vercel URL is included
-].filter(Boolean); // Remove any undefined values
+  process.env.FRONTEND_PRODUCTION_URL
+].filter(Boolean).filter((origin, index, arr) => arr.indexOf(origin) === index); // Remove duplicates
 
 app.use(
   cors({
@@ -57,7 +56,7 @@ app.use(requestLogger);
 // Apply general rate limiting
 app.use(generalRateLimiter);
 
-// Routes
+// Routes - Reorganized to avoid conflicts
 const userRoutes = require("./routes/user");
 app.use("/api", userRoutes);
 
@@ -75,13 +74,13 @@ app.use("/auth", authRoutes);
 const activityRoutes = require("./routes/activityRoutes");
 app.use("/api/activity", activityRoutes);
 
-// Redux Support routes - SV1 Backend Support
+// Redux Support routes - SV1 Backend Support (separated to avoid conflicts)
 const reduxRoutes = require("./routes/reduxRoutes");
-app.use("/api", reduxRoutes);
+app.use("/api/redux", reduxRoutes);
 
-// Avatar routes
+// Avatar routes - mount at /api/avatars to avoid conflicts
 const avatarRoutes = require("./routes/avatarRoutes");
-app.use("/api/users", avatarRoutes);
+app.use("/api/avatars", avatarRoutes);
 
 // Profile routes are handled by reduxRoutes.js - removed duplicates
 
@@ -97,6 +96,9 @@ app.get("/", (req, res) => {
       "GET /health - Health check",
       "GET /users - Get all users", 
       "GET /api/users - Get all users (API)",
+      "PUT /api/users/:id - Update user by ID",
+      "POST /api/avatars/upload - Upload user avatar",
+      "GET /api/avatars/:id - Get user avatar",
       "POST /auth/login - User login",
       "POST /auth/signup - User signup",
       "GET /_debug_routes - List all routes"
