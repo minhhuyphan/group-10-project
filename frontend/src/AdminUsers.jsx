@@ -8,7 +8,9 @@ const AdminUsers = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const handleEdit = (user) => {
+    console.log('🔍 handleEdit called with user:', user);
     setEditingUser(user);
+    console.log('✅ editingUser state updated');
   };
 
   const handleCloseModal = () => {
@@ -47,11 +49,14 @@ const AdminUsers = () => {
 
       {/* Modal sửa user - chỉ hiện khi có user được chọn */}
       {editingUser && (
-        <EditUserModal
-          user={editingUser}
-          onClose={handleCloseModal}
-          onUserUpdated={handleUserUpdated}
-        />
+        <>
+          {console.log('🎯 Rendering EditUserModal with editingUser:', editingUser)}
+          <EditUserModal
+            user={editingUser}
+            onClose={handleCloseModal}
+            onUserUpdated={handleUserUpdated}
+          />
+        </>
       )}
     </div>
   );

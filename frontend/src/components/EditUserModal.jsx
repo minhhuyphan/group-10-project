@@ -19,6 +19,8 @@ const EditUserModal = ({ user, onClose, onUserUpdated }) => {
 
   // Fill form when user changes
   useEffect(() => {
+    console.log('📝 EditUserModal mounted/updated with user:', user);
+    console.log('🔐 canManageUsers():', canManageUsers());
     if (user) {
       setFormData({
         name: user.name || "",
@@ -174,7 +176,12 @@ const EditUserModal = ({ user, onClose, onUserUpdated }) => {
     }
   };
 
-  if (!user || !canManageUsers()) return null;
+  if (!user || !canManageUsers()) {
+    console.log('❌ EditUserModal returning null - user:', user, 'canManageUsers:', canManageUsers());
+    return null;
+  }
+
+  console.log('✅ EditUserModal rendering modal with user:', user);
 
   return (
     <div className="modal-backdrop" onClick={handleBackdropClick}>
