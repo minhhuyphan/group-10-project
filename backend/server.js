@@ -5,11 +5,18 @@ const cors = require("cors");
 const app = express();
 
 // Import middlewares
-const { requestLogger, errorLogger } = require('./middleware/loggingMiddleware');
-const { generalRateLimiter, authRateLimiter, refreshTokenRateLimiter } = require('./middleware/rateLimitMiddleware');
+const {
+  requestLogger,
+  errorLogger,
+} = require("./middleware/loggingMiddleware");
+const {
+  generalRateLimiter,
+  authRateLimiter,
+  refreshTokenRateLimiter,
+} = require("./middleware/rateLimitMiddleware");
 
 // Import Cloudinary config
-const { testConnection } = require('./config/cloudinary');
+const { testConnection } = require("./config/cloudinary");
 
 // Middleware
 app.use(
@@ -17,8 +24,7 @@ app.use(
     origin: [
       "http://localhost:3000", 
       "http://127.0.0.1:3000",
-      "https://group-10-project.vercel.app", // Production frontend
-      "https://*.vercel.app" // All Vercel preview deployments
+      "https://group-10-project-nine.vercel.app" // Frontend production URL
     ],
     credentials: true,
   })
@@ -64,24 +70,20 @@ const authenticateToken = async (req, res, next) => {
     const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
 
     if (!token) {
-      return res
-        .status(401)
-        .json({
-          message: "Access token not provided",
-          error: "No token provided",
-        });
+      return res.status(401).json({
+        message: "Access token not provided",
+        error: "No token provided",
+      });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id);
 
     if (!user || !user.isActive) {
-      return res
-        .status(401)
-        .json({
-          message: "Invalid token or user not found",
-          error: "Invalid token",
-        });
+      return res.status(401).json({
+        message: "Invalid token or user not found",
+        error: "Invalid token",
+      });
     }
 
     req.user = user;
@@ -117,12 +119,12 @@ app.put("/profile", authenticateToken, async (req, res) => {
 
     // If avatar is a data URL (base64), parse and store binary + mime
     if (avatar !== undefined) {
-      if (typeof avatar === 'string' && avatar.startsWith('data:')) {
+      if (typeof avatar === "string" && avatar.startsWith("data:")) {
         const matches = avatar.match(/^data:(.+);base64,(.*)$/);
         if (matches) {
           const mime = matches[1];
           const b64 = matches[2];
-          const buf = Buffer.from(b64, 'base64');
+          const buf = Buffer.from(b64, "base64");
           update.avatarData = buf;
           update.avatarMime = mime;
           // also clear textual avatar field or keep for external URL
@@ -164,19 +166,27 @@ app.get("/test", (req, res) => {
 });
 
 // Debug route: list registered routes (development only)
-app.get('/_debug_routes', (req, res) => {
+app.get("/_debug_routes", (req, res) => {
   try {
     const routes = [];
     app._router.stack.forEach((middleware) => {
       if (middleware.route) {
         // routes registered directly on the app
-        const methods = Object.keys(middleware.route.methods).join(',').toUpperCase();
+        const methods = Object.keys(middleware.route.methods)
+          .join(",")
+          .toUpperCase();
         routes.push({ path: middleware.route.path, methods });
-      } else if (middleware.name === 'router' && middleware.handle && middleware.handle.stack) {
+      } else if (
+        middleware.name === "router" &&
+        middleware.handle &&
+        middleware.handle.stack
+      ) {
         // router middleware
         middleware.handle.stack.forEach((handler) => {
           if (handler.route) {
-            const methods = Object.keys(handler.route.methods).join(',').toUpperCase();
+            const methods = Object.keys(handler.route.methods)
+              .join(",")
+              .toUpperCase();
             routes.push({ path: handler.route.path, methods });
           }
         });
