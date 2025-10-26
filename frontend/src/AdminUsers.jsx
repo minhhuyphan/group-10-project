@@ -25,13 +25,15 @@ const AdminUsers = () => {
   };
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h1 style={{ marginBottom: '20px' }}>👨‍💼 Admin - Quản lý người dùng</h1>
+    <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+      <h1 style={{ marginBottom: '30px', color: '#0f172a' }}>👨‍💼 Admin - Quản lý người dùng</h1>
       
       {/* Form thêm user mới - luôn hiển thị */}
-      <AddUser 
-        onUserAdded={handleUserAdded}
-      />
+      <div style={{ marginBottom: '40px' }}>
+        <AddUser 
+          onUserAdded={handleUserAdded}
+        />
+      </div>
       
       {/* Danh sách users */}
       <div style={{ marginTop: '40px' }}>
