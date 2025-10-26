@@ -31,7 +31,7 @@ const UploadAvatar = () => {
       const form = new FormData();
       form.append('avatar', file);
 
-      const res = await api.post('/users/avatar', form, {
+      const res = await api.post('/api/users/avatar', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (evt) => {
           if (evt.total) {

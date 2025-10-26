@@ -163,7 +163,7 @@ const AddUser = ({ onUserAdded, editingUser, onCancelEdit }) => {
       if (isEditing && editingUser) {
         // Update existing user
         response = await api.put(
-          `/users/${editingUser._id || editingUser.id}`,
+          `/api/users/${editingUser._id || editingUser.id}`,
           userData
         );
         setSuccess(true);
@@ -175,7 +175,7 @@ const AddUser = ({ onUserAdded, editingUser, onCancelEdit }) => {
         }, 2000);
       } else {
         // Create new user
-        response = await api.post("/users", userData);
+        response = await api.post("/api/users", userData);
 
         // Reset form
         setFormData({ name: "", email: "", age: "" });

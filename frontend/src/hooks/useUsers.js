@@ -12,7 +12,7 @@ export const useUsers = () => {
     try {
       setLoading(true);
       setError(null);
-  const response = await api.get(`/users`);
+  const response = await api.get(`/api/users`);
   setUsers(response.data);
       console.log(`✅ Loaded ${response.data.length} users successfully`);
       return response.data;
@@ -29,7 +29,7 @@ export const useUsers = () => {
   // Add new user
   const addUser = useCallback(async (userData) => {
     try {
-  const response = await api.post(`/users`, userData);
+  const response = await api.post(`/api/users`, userData);
       setUsers(prevUsers => [...prevUsers, response.data]);
       console.log('✅ User added successfully:', response.data);
       return response.data;
@@ -43,7 +43,7 @@ export const useUsers = () => {
   // Update user
   const updateUser = useCallback(async (userId, userData) => {
     try {
-  const response = await api.put(`/users/${userId}`, userData);
+  const response = await api.put(`/api/users/${userId}`, userData);
       setUsers(prevUsers => 
         prevUsers.map(user => 
           (user._id || user.id) === userId ? response.data : user
@@ -61,7 +61,7 @@ export const useUsers = () => {
   // Delete user
   const deleteUser = useCallback(async (userId) => {
     try {
-  await api.delete(`/users/${userId}`);
+  await api.delete(`/api/users/${userId}`);
       setUsers(prevUsers => 
         prevUsers.filter(user => (user._id || user.id) !== userId)
       );

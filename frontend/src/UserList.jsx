@@ -14,7 +14,7 @@ const UserList = ({ editingUser, onEdit, onCancelEdit, showActions = true }) => 
     try {
       setLoading(true);
       setError(null);
-      const response = await api.get("/users");
+      const response = await api.get("/api/users");
       setUsers(response.data);
       console.log(`✅ Loaded ${response.data.length} users successfully`);
     } catch (err) {
@@ -47,7 +47,7 @@ const UserList = ({ editingUser, onEdit, onCancelEdit, showActions = true }) => 
 
     try {
       setDeleteLoading(userId);
-      await api.delete(`/users/${userId}`);
+      await api.delete(`/api/users/${userId}`);
 
       // Optimistic update
       setUsers((prevUsers) =>
