@@ -1,0 +1,370 @@
+// backend/models/User.js - Authentication Schema
+const mongoose = require("mongoose");
+const bcrypt = require("bcrypt");
+
+const userSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: [true, "Tên là bắt buộc"],
+      trim: true,
+      minlength: [2, "Tên phải có ít nhất 2 ký tự"],
+      maxlength: [50, "Tên không được quá 50 ký tự"],
+    },
+    email: {
+      type: String,
+      required: [true, "Email là bắt buộc"],
+      unique: true,
+      lowercase: true,
+      trim: true,
+      match: [
+        /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
+        "Email không hợp lệ",
+      ],
+    },
+    password: {
+      type: String,
+      required: [true, "Mật khẩu là bắt buộc"],
+      minlength: [6, "Mật khẩu phải có ít nhất 6 ký tự"],
+      select: false, // Không trả về password khi query
+    },
+    role: {
+      type: String,
+      enum: ["user", "admin", "moderator"],
+      default: "user",
+    },
+    permissions: {
+      type: [String],
+      default: [],
+      // Possible permissions: 'read', 'write', 'delete', 'manage_users', 'manage_content'
+    },
+    department: {
+      type: String,
+      default: null,
+      // For moderators: which department/area they manage
+    },
+    avatar: {
+      type: String,
+      default: null,
+    },
+    avatarCloudinaryId: {
+      type: String,
+      default: null,
+    },
+    avatarData: {
+      type: Buffer,
+      default: null,
+      select: false,
+    },
+    avatarMime: {
+      type: String,
+      default: null,
+      select: false,
+    },
+    age: {
+      type: Number,
+      min: [1, "Tuổi phải lớn hơn 0"],
+      max: [150, "Tuổi không được quá 150"],
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    resetPasswordToken: {
+      type: String,
+      default: null,
+    },
+    resetPasswordExpires: {
+      type: Date,
+      default: null,
+    },
+    lastLogin: {
+      type: Date,
+      default: null,
+    },
+    loginAttempts: {
+      type: Number,
+      default: 0,
+    },
+    lockUntil: {
+      type: Date,
+      default: null,
+    },
+    // Redux & Protected Routes support fields
+    isAdmin: {
+      type: Boolean,
+      default: false,
+    },
+    bio: {
+      type: String,
+      maxlength: [500, "Bio không được quá 500 ký tự"],
+      default: "",
+    },
+    phone: {
+      type: String,
+      match: [/^[\d\s\-\+\(\)]+$/, "Số điện thoại không hợp lệ"],
+      default: "",
+    },
+    address: {
+      type: String,
+      maxlength: [200, "Địa chỉ không được quá 200 ký tự"],
+      default: "",
+    },
+    preferences: {
+      theme: {
+        type: String,
+        enum: ["light", "dark", "auto"],
+        default: "light",
+      },
+      language: {
+        type: String,
+        default: "vi",
+      },
+      notifications: {
+        email: { type: Boolean, default: true },
+        push: { type: Boolean, default: true },
+        sms: { type: Boolean, default: false },
+      },
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+// Indexes
+userSchema.index({ role: 1 });
+userSchema.index({ isActive: 1 });
+userSchema.index({ role: 1, isActive: 1 }); // Compound index for role-based queries
+userSchema.index({ department: 1 }); // Index for department queries
+
+// Virtual for user's full profile
+userSchema.virtual("profile").get(function () {
+  let avatarValue = this.avatar;
+
+  // Nếu có avatarData thì chuyển sang dạng base64
+  if (!avatarValue && this.avatarData && this.avatarMime) {
+    try {
+      const base64 = this.avatarData.toString("base64");
+      avatarValue = `data:${this.avatarMime};base64,${base64}`;
+    } catch (e) {
+      avatarValue = this.avatar;
+    }
+  }
+
+  return {
+    _id: this._id,
+    id: this._id,
+    name: this.name,
+    email: this.email,
+    role: this.role,
+    isAdmin: this.isAdmin || false,
+    avatar: avatarValue,
+    age: this.age,
+    bio: this.bio,
+    phone: this.phone,
+    address: this.address,
+    isActive: this.isActive,
+    lastLogin: this.lastLogin,
+    preferences: this.preferences,
+    createdAt: this.createdAt,
+    updatedAt: this.updatedAt,
+  };
+});
+
+// Pre-save middleware to hash password
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Compare password
+userSchema.methods.comparePassword = async function (candidatePassword) {
+  try {
+    // Guard: if password field is not loaded, signal no match to avoid throwing
+    if (!this.password || typeof candidatePassword !== 'string') {
+      return false;
+    }
+    return await bcrypt.compare(candidatePassword, this.password);
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Generate reset password token
+userSchema.methods.generateResetPasswordToken = function () {
+  const crypto = require("crypto");
+  const resetToken = crypto.randomBytes(20).toString("hex");
+
+  this.resetPasswordToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  this.resetPasswordExpires = Date.now() + 10 * 60 * 1000; // 10 phút
+  return resetToken;
+};
+
+// Kiểm tra tài khoản bị khóa
+userSchema.methods.isLocked = function () {
+  return !!(this.lockUntil && this.lockUntil > Date.now());
+};
+
+// Tăng số lần đăng nhập sai
+userSchema.methods.incLoginAttempts = function () {
+  const maxAttempts = 5;
+  const lockTime = 2 * 60 * 60 * 1000; // 2 giờ
+
+  if (this.lockUntil && this.lockUntil < Date.now()) {
+    return this.updateOne({
+      $unset: { lockUntil: 1 },
+      $set: { loginAttempts: 1 },
+    });
+  }
+
+  const updates = { $inc: { loginAttempts: 1 } };
+
+  if (this.loginAttempts + 1 >= maxAttempts && !this.isLocked()) {
+    updates.$set = { lockUntil: Date.now() + lockTime };
+  }
+
+  return this.updateOne(updates);
+};
+
+// Static: lý do thất bại đăng nhập
+userSchema.statics.getAuthFailureReasons = function () {
+  return {
+    NOT_FOUND: 0,
+    PASSWORD_INCORRECT: 1,
+    MAX_ATTEMPTS: 2,
+  };
+};
+
+// Static: xác thực người dùng
+userSchema.statics.authenticate = async function (email, password) {
+  const reasons = this.getAuthFailureReasons();
+
+  try {
+    const user = await this.findOne({
+      email: email.toLowerCase(),
+      isActive: true,
+    }).select("+password");
+
+    if (!user) {
+      return { success: false, reason: reasons.NOT_FOUND };
+    }
+
+    if (user.isLocked()) {
+      await user.incLoginAttempts();
+      return { success: false, reason: reasons.MAX_ATTEMPTS };
+    }
+
+    const isMatch = await user.comparePassword(password);
+
+    if (isMatch) {
+      await user.updateOne({
+        $set: { lastLogin: new Date() },
+        $unset: { loginAttempts: 1, lockUntil: 1 },
+      });
+      return { success: true, user };
+    }
+
+    await user.incLoginAttempts();
+    return { success: false, reason: reasons.PASSWORD_INCORRECT };
+  } catch (error) {
+    throw error;
+  }
+};
+
+// RBAC Helper Methods
+userSchema.methods.hasRole = function (role) {
+  return this.role === role || this.isAdmin === true;
+};
+
+userSchema.methods.isModerator = function () {
+  return this.role === 'moderator';
+};
+
+userSchema.methods.isUser = function () {
+  return this.role === 'user';
+};
+
+userSchema.methods.hasPermission = function (permission) {
+  if (this.role === 'admin') return true; // Admin has all permissions
+  return this.permissions.includes(permission);
+};
+
+userSchema.methods.canManageDepartment = function (department) {
+  if (this.role === 'admin') return true;
+  if (this.role === 'moderator' && this.department === department) return true;
+  return false;
+};
+
+// Generate password reset token
+userSchema.methods.generateResetPasswordToken = function () {
+  const crypto = require('crypto');
+  
+  // Generate reset token
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  
+  // Hash token and set to resetPasswordToken field
+  this.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+  
+  // Set expire time (1 hour)
+  this.resetPasswordExpires = Date.now() + 60 * 60 * 1000;
+  
+  // Return unhashed token (to be sent via email)
+  return resetToken;
+};
+
+// Static: Get users by role
+userSchema.statics.getUsersByRole = async function (role) {
+  return this.find({ role, isActive: true }).select('-password');
+};
+
+// Static: Count users by role
+userSchema.statics.countByRole = async function () {
+  return this.aggregate([
+    { $match: { isActive: true } },
+    { $group: { _id: '$role', count: { $sum: 1 } } },
+    { $sort: { _id: 1 } }
+  ]);
+};
+
+// Defensive projection: always exclude heavy/sensitive fields unless explicitly included
+function excludeHeavyFields(query) {
+  // Only add projection if user didn't explicitly request avatarData/avatarMime
+  const fields = query._fields;
+  // Always exclude heavy avatar binary fields and noisy metadata unless explicitly requested
+  if (!fields || (!fields.avatarData && !fields.avatarMime)) {
+    query.select('-__v -resetPasswordToken -resetPasswordExpires -avatarData -avatarMime');
+  }
+  // IMPORTANT: do NOT force-exclude password here; some flows (login) intentionally select('+password')
+}
+
+userSchema.pre('find', function () { excludeHeavyFields(this); });
+userSchema.pre('findOne', function () { excludeHeavyFields(this); });
+userSchema.pre('findById', function () { excludeHeavyFields(this); });
+
+// Global JSON transform to remove sensitive/heavy fields from all responses
+userSchema.set('toJSON', {
+  virtuals: true,
+  transform: (doc, ret) => {
+    delete ret.password;
+    delete ret.__v;
+    delete ret.resetPasswordToken;
+    delete ret.resetPasswordExpires;
+    delete ret.avatarData; // ensure raw binary never leaks
+    delete ret.avatarMime;
+    return ret;
+  }
+});
+
+module.exports = mongoose.model("User", userSchema);
