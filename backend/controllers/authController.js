@@ -3,7 +3,7 @@ const RefreshToken = require('../models/RefreshToken');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const { sendPasswordResetEmail } = require('../services/emailService');
+const emailService = require('../services/emailService');
 const { logActivity } = require('../middleware/activityLogMiddleware');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key';
@@ -203,7 +203,7 @@ exports.forgotPassword = async (req, res) => {
     if (emailConfigured) {
       // Gửi email thật
       try {
-        await sendPasswordResetEmail(user.email, resetToken, user.name);
+        await emailService.sendPasswordResetEmail(user.email, resetToken, user.name);
         console.log('✅ Password reset email sent to:', user.email);
         
         res.json({ 
