@@ -3,7 +3,7 @@ import api from "./api";
 import { useSelector } from "react-redux";
 import UserRoleIndicator, { usePermissions } from "./components/UserRoleIndicator";
 
-const UserList = ({ editingUser, onEdit, onCancelEdit, showActions = true }) => {
+const UserList = ({ onEdit, showActions = true }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -101,7 +101,10 @@ const UserList = ({ editingUser, onEdit, onCancelEdit, showActions = true }) => 
       ) : (
         <div className="users-grid">
           {users.map((user, index) => (
-            <div key={user._id || user.id || index} className="user-card">
+            <div 
+              key={user._id || user.id || index} 
+              className="user-card"
+            >
               <h3>{user.name}</h3>
               <p>Email: {user.email}</p>
               {user.age && <p>Tuổi: {user.age}</p>}
@@ -113,10 +116,7 @@ const UserList = ({ editingUser, onEdit, onCancelEdit, showActions = true }) => 
                       className="edit-btn"
                       disabled={deleteLoading === (user._id || user.id)}
                     >
-                      {editingUser &&
-                      (editingUser._id || editingUser.id) === (user._id || user.id)
-                        ? "Đang sửa..."
-                        : "Sửa"}
+                      ✏️ Sửa
                     </button>
                   )}
                   {hasPermission('delete_user') && (
@@ -125,7 +125,7 @@ const UserList = ({ editingUser, onEdit, onCancelEdit, showActions = true }) => 
                       className="delete-btn"
                       disabled={deleteLoading === (user._id || user.id)}
                     >
-                      {deleteLoading === (user._id || user.id) ? "Đang xóa..." : "Xóa"}
+                      {deleteLoading === (user._id || user.id) ? "Đang xóa..." : "🗑️ Xóa"}
                     </button>
                   )}
                   {!canManageUsers && (

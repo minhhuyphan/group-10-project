@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import UserList from './UserList';
 import AddUser from './AddUser';
+import EditUserModal from './components/EditUserModal';
 
 const AdminUsers = () => {
   const [editingUser, setEditingUser] = useState(null);
@@ -8,36 +9,48 @@ const AdminUsers = () => {
 
   const handleEdit = (user) => {
     setEditingUser(user);
-    // Scroll to top to show the edit form
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleCancelEdit = () => {
+  const handleCloseModal = () => {
     setEditingUser(null);
   };
 
   const handleUserAdded = () => {
-    setEditingUser(null);
     setRefreshTrigger(prev => prev + 1);
+  };
+
+  const handleUserUpdated = () => {
+    setRefreshTrigger(prev => prev + 1);
+    setEditingUser(null);
   };
 
   return (
     <div style={{ padding: '20px' }}>
-      <h2>Admin - Quản lý người dùng</h2>
+      <h1 style={{ marginBottom: '20px' }}>👨‍💼 Admin - Quản lý người dùng</h1>
       
+      {/* Form thêm user mới - luôn hiển thị */}
       <AddUser 
-        editingUser={editingUser}
-        onCancelEdit={handleCancelEdit}
         onUserAdded={handleUserAdded}
       />
       
-      <UserList 
-        key={refreshTrigger}
-        editingUser={editingUser}
-        onEdit={handleEdit}
-        onCancelEdit={handleCancelEdit}
-        showActions={true}
-      />
+      {/* Danh sách users */}
+      <div style={{ marginTop: '40px' }}>
+        <UserList 
+          key={refreshTrigger}
+          editingUser={editingUser}
+          onEdit={handleEdit}
+          showActions={true}
+        />
+      </div>
+
+      {/* Modal sửa user - chỉ hiện khi có user được chọn */}
+      {editingUser && (
+        <EditUserModal
+          user={editingUser}
+          onClose={handleCloseModal}
+          onUserUpdated={handleUserUpdated}
+        />
+      )}
     </div>
   );
 };

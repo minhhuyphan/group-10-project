@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import api from "./api";
 import { usePermissions } from "./components/UserRoleIndicator";
 
-const AddUser = ({ onUserAdded, editingUser, onCancelEdit }) => {
+const AddUser = ({ onUserAdded }) => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -11,30 +11,12 @@ const AddUser = ({ onUserAdded, editingUser, onCancelEdit }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({
     name: "",
     email: "",
     age: "",
   });
   const { hasPermission, canManageUsers } = usePermissions();
-
-  // Fill form when editing
-  useEffect(() => {
-    if (editingUser) {
-      setFormData({
-        name: editingUser.name || "",
-        email: editingUser.email || "",
-        age: editingUser.age || "",
-      });
-      setIsEditing(true);
-      setError(null);
-      setSuccess(false);
-    } else {
-      setFormData({ name: "", email: "", age: "" });
-      setIsEditing(false);
-    }
-  }, [editingUser]);
 
   // Real-time field validation
   const validateField = (name, value) => {
@@ -160,56 +142,27 @@ const AddUser = ({ onUserAdded, editingUser, onCancelEdit }) => {
         ...(formData.age && { age: parseInt(formData.age) }),
       };
 
-      let response;
+      // Create new user
+      const response = await api.post("/api/users", userData);
 
-      if (isEditing && editingUser) {
-        // Update existing user
-        response = await api.put(
-          `/api/users/${editingUser._id || editingUser.id}`,
-          userData
-        );
-        setSuccess(true);
+      // Reset form
+      setFormData({ name: "", email: "", age: "" });
+      setFieldErrors({ name: "", email: "", age: "" });
+      setSuccess(true);
 
-        // Clear success message after 3 seconds
-        setTimeout(() => {
-          setSuccess(false);
-          handleCancel();
-        }, 2000);
-      } else {
-        // Create new user
-        response = await api.post("/api/users", userData);
-
-        // Reset form
-        setFormData({ name: "", email: "", age: "" });
-        setSuccess(true);
-
-        // Clear success message after 3 seconds
-        setTimeout(() => setSuccess(false), 3000);
-      }
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(false), 3000);
 
       // Call parent callback to refresh user list
       if (onUserAdded) {
         onUserAdded(response.data);
       }
     } catch (err) {
-      const errorMessage = isEditing
-        ? "Không thể cập nhật người dùng. Vui lòng thử lại."
-        : "Không thể thêm người dùng. Vui lòng thử lại.";
+      const errorMessage = "Không thể thêm người dùng. Vui lòng thử lại.";
       setError(errorMessage);
       console.error("Error saving user:", err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Handle cancel editing
-  const handleCancel = () => {
-    setFormData({ name: "", email: "", age: "" });
-    setIsEditing(false);
-    setError(null);
-    setSuccess(false);
-    if (onCancelEdit) {
-      onCancelEdit();
     }
   };
 
@@ -262,14 +215,12 @@ const AddUser = ({ onUserAdded, editingUser, onCancelEdit }) => {
 
   return (
     <div className="add-user">
-      <h2>{isEditing ? "Sửa thông tin người dùng" : "Thêm người dùng mới"}</h2>
+      <h2>➕ Thêm người dùng mới</h2>
 
       {error && <div className="error-message">{error}</div>}
       {success && (
         <div className="success-message">
-          {isEditing
-            ? "Cập nhật người dùng thành công!"
-            : "Thêm người dùng thành công!"}
+          ✅ Thêm người dùng thành công!
         </div>
       )}
 
@@ -338,25 +289,8 @@ const AddUser = ({ onUserAdded, editingUser, onCancelEdit }) => {
             }
             className="submit-btn"
           >
-            {loading
-              ? isEditing
-                ? "Đang cập nhật..."
-                : "Đang thêm..."
-              : isEditing
-              ? "Cập nhật người dùng"
-              : "Thêm người dùng"}
+            {loading ? "Đang thêm..." : "➕ Thêm người dùng"}
           </button>
-
-          {isEditing && (
-            <button
-              type="button"
-              onClick={handleCancel}
-              disabled={loading}
-              className="cancel-btn"
-            >
-              Hủy
-            </button>
-          )}
         </div>
       </form>
     </div>
