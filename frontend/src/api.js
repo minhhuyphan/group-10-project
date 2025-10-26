@@ -1,56 +1,52 @@
-import axios from 'axios';
+import axios from "axios";
 
-// Determine backend base URL from environment (for production) or use proxy in dev
-const BACKEND_BASE = process.env.REACT_APP_API_URL || '';
+// ---- Base URL detection ----
+// Nếu chạy local: dùng proxy CRA (/api)
+// Nếu chạy production (Render, Vercel...): dùng biến môi trường
+const BACKEND_BASE = process.env.REACT_APP_API_URL || "";
 
-// Single API instance
+// Tạo instance axios
 const api = axios.create({
-  // If BACKEND_BASE is set (production), we'll use absolute base and rewrite paths below
-  baseURL: BACKEND_BASE || '/api',
-  headers: { 'Content-Type': 'application/json' },
+  baseURL: BACKEND_BASE || "/api",
+  headers: { "Content-Type": "application/json" },
 });
 
-// ---- Token storage helpers (backward compatible) ----
+// ---- Token helpers ----
 export const getAccessToken = () =>
-  localStorage.getItem('accessToken') || localStorage.getItem('token');
+  localStorage.getItem("accessToken") || localStorage.getItem("token");
 
-export const getRefreshToken = () => localStorage.getItem('refreshToken');
+export const getRefreshToken = () => localStorage.getItem("refreshToken");
 
-export const setAccessToken = (accessToken) => {
-  if (accessToken) localStorage.setItem('accessToken', accessToken);
+export const setAccessToken = (token) => {
+  if (token) localStorage.setItem("accessToken", token);
 };
 
-export const setRefreshToken = (refreshToken) => {
-  if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+export const setRefreshToken = (token) => {
+  if (token) localStorage.setItem("refreshToken", token);
 };
 
 export const clearTokens = () => {
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('refreshToken');
-  // legacy
-  localStorage.removeItem('token');
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
+  localStorage.removeItem("token"); // legacy
 };
 
-// ---- Attach Authorization header on every request ----
+// ---- Request interceptor: gắn token + chỉnh URL production ----
 api.interceptors.request.use(
   (config) => {
-    // In production (absolute baseURL), rewrite special endpoints that
-    // are not under '/api' on the backend (auth and profile)
     try {
-      if (BACKEND_BASE) {
-        if (typeof config.url === 'string') {
-          if (config.url.startsWith('/api/auth/')) {
-            config.url = config.url.replace('/api', ''); // -> /auth/...
-          } else if (config.url === '/api/profile' || config.url.startsWith('/api/profile')) {
-            config.url = config.url.replace('/api', ''); // -> /profile
-          }
+      // Nếu đang ở production và gọi các endpoint đặc biệt
+      if (BACKEND_BASE && typeof config.url === "string") {
+        if (config.url.startsWith("/api/auth/")) {
+          config.url = config.url.replace("/api", ""); // => /auth/...
+        } else if (
+          config.url === "/api/profile" ||
+          config.url.startsWith("/api/profile")
+        ) {
+          config.url = config.url.replace("/api", ""); // => /profile
         }
       }
-    } catch (_) {
-      // noop
-    }
 
-    try {
       const token = getAccessToken();
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
@@ -63,7 +59,7 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// ---- Auto refresh on 401 and retry original request ----
+// ---- Response interceptor: refresh token khi 401 ----
 let isRefreshing = false;
 let refreshPromise = null;
 
@@ -73,7 +69,6 @@ api.interceptors.response.use(
     const status = error?.response?.status;
     const originalRequest = error?.config || {};
 
-    // Avoid infinite loop
     if (status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
@@ -84,21 +79,24 @@ api.interceptors.response.use(
       }
 
       try {
-        // Single-flight refresh
+        // Chỉ 1 request refresh được thực hiện cùng lúc
         if (!isRefreshing) {
           isRefreshing = true;
-          // Use the same api instance so URL rewriting and baseURL apply
-          refreshPromise = api.post('/api/auth/refresh', { refreshToken });
+          refreshPromise = api.post("/api/auth/refresh", { refreshToken });
         }
 
         const res = await refreshPromise;
-        const { accessToken, refreshToken: newRefresh, token: legacyAccess } = res.data || {};
+        const {
+          accessToken,
+          refreshToken: newRefresh,
+          token: legacyAccess,
+        } = res.data || {};
         const nextAccessToken = accessToken || legacyAccess;
 
         if (nextAccessToken) setAccessToken(nextAccessToken);
         if (newRefresh) setRefreshToken(newRefresh);
 
-        // Update header and retry
+        // Gắn lại token mới và retry request cũ
         originalRequest.headers = originalRequest.headers || {};
         originalRequest.headers.Authorization = `Bearer ${nextAccessToken}`;
         return api(originalRequest);

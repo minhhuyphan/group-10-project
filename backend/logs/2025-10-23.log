@@ -12,7 +12,6 @@
 {"timestamp":"2025-10-23T16:50:14.678Z","level":"WARN","message":"GET /users","method":"GET","url":"/users","statusCode":304,"duration":"177ms","ip":"::1","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"}
 {"timestamp":"2025-10-23T16:50:15.175Z","level":"WARN","message":"GET /users","method":"GET","url":"/users","statusCode":304,"duration":"182ms","ip":"::1","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"}
 {"timestamp":"2025-10-23T16:50:15.388Z","level":"WARN","message":"GET /users","method":"GET","url":"/users","statusCode":304,"duration":"133ms","ip":"::1","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"}
-
 {"timestamp":"2025-10-23T17:27:06.319Z","level":"ERROR","message":"POST /auth/login","method":"POST","url":"/auth/login","statusCode":400,"duration":"5ms","ip":"::1","userAgent":"PostmanRuntime/7.48.0"}
 {"timestamp":"2025-10-23T17:27:17.224Z","level":"ERROR","message":"POST /auth/login","method":"POST","url":"/auth/login","statusCode":401,"duration":"105ms","ip":"::1","userAgent":"PostmanRuntime/7.48.0"}
 {"timestamp":"2025-10-23T17:27:47.690Z","level":"ERROR","message":"POST /auth/login","method":"POST","url":"/auth/login","statusCode":429,"duration":"0ms","ip":"::1","userAgent":"PostmanRuntime/7.48.0"}
@@ -22,4 +21,3 @@
 {"timestamp":"2025-10-23T17:31:05.780Z","level":"ERROR","message":"GET /auth/user","method":"GET","url":"/auth/user","statusCode":404,"duration":"1ms","ip":"::1","userAgent":"PostmanRuntime/7.48.0"}
 {"timestamp":"2025-10-23T17:31:10.802Z","level":"ERROR","message":"GET /auth/users","method":"GET","url":"/auth/users","statusCode":404,"duration":"1ms","ip":"::1","userAgent":"PostmanRuntime/7.48.0"}
 {"timestamp":"2025-10-23T17:31:18.025Z","level":"INFO","message":"GET /users","method":"GET","url":"/users","statusCode":200,"duration":"222ms","ip":"::1","userAgent":"PostmanRuntime/7.48.0"}
-
