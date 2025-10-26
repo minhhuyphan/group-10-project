@@ -9,7 +9,11 @@ const AdminUsers = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const handleEdit = (user) => {
+    console.log('🔍 HANDLEEDIT CALLED! User:', user);
+    console.log('🔍 User ID:', user?._id || user?.id);
+    console.log('🔍 User Name:', user?.name);
     setEditingUser(user);
+    console.log('✅ State updated, editingUser should be:', user);
   };
 
   const handleCloseModal = () => {
@@ -47,13 +51,18 @@ const AdminUsers = () => {
       </div>
 
       {/* Modal sửa user - chỉ hiện khi có user được chọn */}
+      {console.log('🎯 AdminUsers render - editingUser:', editingUser)}
       {editingUser && (
-        <EditUserModal
-          user={editingUser}
-          onClose={handleCloseModal}
-          onUserUpdated={handleUserUpdated}
-        />
+        <>
+          {console.log('✅ RENDERING MODAL with user:', editingUser)}
+          <EditUserModal
+            user={editingUser}
+            onClose={handleCloseModal}
+            onUserUpdated={handleUserUpdated}
+          />
+        </>
       )}
+      {!editingUser && console.log('❌ No editingUser, modal will not render')}
     </div>
   );
 };
