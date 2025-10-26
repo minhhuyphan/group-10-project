@@ -8,22 +8,35 @@ class EmailService {
 
   initializeTransporter() {
     try {
+      const emailUser = process.env.EMAIL_USER;
+      const emailPass = process.env.EMAIL_PASS;
+      
+      console.log('📧 Email config check:');
+      console.log('   EMAIL_USER:', emailUser ? `${emailUser.substring(0, 5)}...` : 'NOT SET');
+      console.log('   EMAIL_PASS:', emailPass ? `${emailPass.substring(0, 3)}***` : 'NOT SET');
+      
+      if (!emailUser || !emailPass) {
+        console.error('❌ Email credentials not configured in .env file');
+        this.transporter = null;
+        return;
+      }
+      
       this.transporter = nodemailer.createTransport({
         service: 'gmail',
         host: 'smtp.gmail.com', 
         port: 587,
         secure: false,
         auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS
+          user: emailUser,
+          pass: emailPass
         },
         tls: {
           rejectUnauthorized: false
         }
       });
-      console.log(' Email transporter initialized');
+      console.log('✅ Email transporter initialized successfully');
     } catch (error) {
-      console.error(' Email transporter initialization failed:', error.message);
+      console.error('❌ Email transporter initialization failed:', error.message);
       this.transporter = null;
     }
   }
