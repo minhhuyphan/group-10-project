@@ -29,14 +29,7 @@ export const useUsers = () => {
   // Add new user
   const addUser = useCallback(async (userData) => {
     try {
-      // Try public route first for testing, fallback to protected route
-      let response;
-      try {
-        response = await api.post(`/api/users/public`, userData);
-      } catch (publicErr) {
-        console.log('Public route failed, trying protected route...', publicErr.response?.status);
-        response = await api.post(`/api/users`, userData);
-      }
+      const response = await api.post(`/api/users`, userData);
       setUsers(prevUsers => [...prevUsers, response.data]);
       console.log('✅ User added successfully:', response.data);
       return response.data;
