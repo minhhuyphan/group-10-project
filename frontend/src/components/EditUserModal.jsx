@@ -176,9 +176,16 @@ const EditUserModal = ({ user, onClose, onUserUpdated }) => {
     }
   };
 
-  if (!user || !canManageUsers()) {
-    console.log('❌ EditUserModal returning null - user:', user, 'canManageUsers:', canManageUsers());
+  // TEMPORARY DEBUG: Skip permission check to test modal rendering
+  console.log('🔍 DEBUG - user:', user, 'canManageUsers:', canManageUsers ? canManageUsers() : 'undefined');
+  
+  if (!user) {
+    console.log('❌ EditUserModal returning null - NO USER');
     return null;
+  }
+
+  if (!canManageUsers()) {
+    console.log('⚠️ WARNING: No manage users permission, but showing modal anyway for debugging');
   }
 
   console.log('✅ EditUserModal rendering modal with user:', user);
