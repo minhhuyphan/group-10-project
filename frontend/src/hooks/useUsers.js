@@ -29,12 +29,21 @@ export const useUsers = () => {
   // Add new user
   const addUser = useCallback(async (userData) => {
     try {
-  const response = await api.post(`/api/users`, userData);
+      const response = await api.post(`/api/users`, userData);
       setUsers(prevUsers => [...prevUsers, response.data]);
       console.log('✅ User added successfully:', response.data);
       return response.data;
     } catch (err) {
-      const errorMessage = err.response?.data?.message || 'Không thể thêm người dùng';
+      let errorMessage = 'Không thể thêm người dùng';
+      
+      if (err.response?.status === 401) {
+        errorMessage = '🔐 Bạn cần đăng nhập để thêm người dùng. Vui lòng đăng nhập với tài khoản Admin hoặc Moderator.';
+      } else if (err.response?.status === 403) {
+        errorMessage = '🚫 Bạn không có quyền thêm người dùng. Chỉ Admin và Moderator mới có thể thêm người dùng mới.\n\n💡 Để test: đăng nhập với admin@example.com (mật khẩu: admin123)';
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      }
+      
       console.error('Error adding user:', err);
       throw new Error(errorMessage);
     }
@@ -43,7 +52,7 @@ export const useUsers = () => {
   // Update user
   const updateUser = useCallback(async (userId, userData) => {
     try {
-  const response = await api.put(`/api/users/${userId}`, userData);
+      const response = await api.put(`/api/users/${userId}`, userData);
       setUsers(prevUsers => 
         prevUsers.map(user => 
           (user._id || user.id) === userId ? response.data : user
@@ -52,7 +61,16 @@ export const useUsers = () => {
       console.log('✅ User updated successfully:', response.data);
       return response.data;
     } catch (err) {
-      const errorMessage = err.response?.data?.message || 'Không thể cập nhật người dùng';
+      let errorMessage = 'Không thể cập nhật người dùng';
+      
+      if (err.response?.status === 401) {
+        errorMessage = '🔐 Bạn cần đăng nhập để sửa người dùng. Vui lòng đăng nhập với tài khoản Admin hoặc Moderator.';
+      } else if (err.response?.status === 403) {
+        errorMessage = '🚫 Bạn không có quyền sửa người dùng. Chỉ Admin và Moderator mới có thể sửa thông tin người dùng.\n\n💡 Để test: đăng nhập với admin@example.com (mật khẩu: admin123)';
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      }
+      
       console.error('Error updating user:', err);
       throw new Error(errorMessage);
     }
@@ -61,14 +79,23 @@ export const useUsers = () => {
   // Delete user
   const deleteUser = useCallback(async (userId) => {
     try {
-  await api.delete(`/api/users/${userId}`);
+      await api.delete(`/api/users/${userId}`);
       setUsers(prevUsers => 
         prevUsers.filter(user => (user._id || user.id) !== userId)
       );
       console.log('✅ User deleted successfully');
       return true;
     } catch (err) {
-      const errorMessage = err.response?.data?.message || 'Không thể xóa người dùng';
+      let errorMessage = 'Không thể xóa người dùng';
+      
+      if (err.response?.status === 401) {
+        errorMessage = '🔐 Bạn cần đăng nhập để xóa người dùng. Vui lòng đăng nhập với tài khoản Admin.';
+      } else if (err.response?.status === 403) {
+        errorMessage = '🚫 Bạn không có quyền xóa người dùng. Chỉ Admin mới có thể xóa người dùng.\n\n💡 Để test: đăng nhập với admin@example.com (mật khẩu: admin123)';
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      }
+      
       console.error('Error deleting user:', err);
       throw new Error(errorMessage);
     }

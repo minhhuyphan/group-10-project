@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import api from "./api";
+import { usePermissions } from "./components/UserRoleIndicator";
 
-const AddUser = ({ onUserAdded, editingUser, onCancelEdit }) => {
+const AddUser = ({ onUserAdded }) => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -10,29 +11,12 @@ const AddUser = ({ onUserAdded, editingUser, onCancelEdit }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({
     name: "",
     email: "",
     age: "",
   });
-
-  // Fill form when editing
-  useEffect(() => {
-    if (editingUser) {
-      setFormData({
-        name: editingUser.name || "",
-        email: editingUser.email || "",
-        age: editingUser.age || "",
-      });
-      setIsEditing(true);
-      setError(null);
-      setSuccess(false);
-    } else {
-      setFormData({ name: "", email: "", age: "" });
-      setIsEditing(false);
-    }
-  }, [editingUser]);
+  const { hasPermission, canManageUsers } = usePermissions();
 
   // Real-time field validation
   const validateField = (name, value) => {
@@ -158,41 +142,23 @@ const AddUser = ({ onUserAdded, editingUser, onCancelEdit }) => {
         ...(formData.age && { age: parseInt(formData.age) }),
       };
 
-      let response;
+      // Create new user
+      const response = await api.post("/api/users", userData);
 
-      if (isEditing && editingUser) {
-        // Update existing user
-        response = await api.put(
-          `/api/users/${editingUser._id || editingUser.id}`,
-          userData
-        );
-        setSuccess(true);
+      // Reset form
+      setFormData({ name: "", email: "", age: "" });
+      setFieldErrors({ name: "", email: "", age: "" });
+      setSuccess(true);
 
-        // Clear success message after 3 seconds
-        setTimeout(() => {
-          setSuccess(false);
-          handleCancel();
-        }, 2000);
-      } else {
-        // Create new user
-        response = await api.post("/api/users", userData);
-
-        // Reset form
-        setFormData({ name: "", email: "", age: "" });
-        setSuccess(true);
-
-        // Clear success message after 3 seconds
-        setTimeout(() => setSuccess(false), 3000);
-      }
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(false), 3000);
 
       // Call parent callback to refresh user list
       if (onUserAdded) {
         onUserAdded(response.data);
       }
     } catch (err) {
-      const errorMessage = isEditing
-        ? "Không thể cập nhật người dùng. Vui lòng thử lại."
-        : "Không thể thêm người dùng. Vui lòng thử lại.";
+      const errorMessage = "Không thể thêm người dùng. Vui lòng thử lại.";
       setError(errorMessage);
       console.error("Error saving user:", err);
     } finally {
@@ -200,27 +166,61 @@ const AddUser = ({ onUserAdded, editingUser, onCancelEdit }) => {
     }
   };
 
-  // Handle cancel editing
-  const handleCancel = () => {
-    setFormData({ name: "", email: "", age: "" });
-    setIsEditing(false);
-    setError(null);
-    setSuccess(false);
-    if (onCancelEdit) {
-      onCancelEdit();
-    }
-  };
+  // Check permissions
+  if (!canManageUsers()) {
+    return (
+      <div className="add-user permission-denied">
+        <h2>🔒 Không có quyền truy cập</h2>
+        <div className="permission-message">
+          <p>Bạn cần đăng nhập với tài khoản <strong>Admin</strong> hoặc <strong>Moderator</strong> để thêm/sửa người dùng.</p>
+          <div className="admin-credentials">
+            <h4>Tài khoản Admin để test:</h4>
+            <ul>
+              <li>Email: <code>admin@example.com</code></li>
+              <li>Password: <code>admin123</code></li>
+            </ul>
+          </div>
+        </div>
+        <style jsx>{`
+          .permission-denied {
+            text-align: center;
+            padding: 40px 20px;
+            background: #fff5f5;
+            border: 1px solid #feb2b2;
+            border-radius: 8px;
+            margin: 20px 0;
+          }
+          .permission-message {
+            color: #744d4d;
+            margin: 20px 0;
+          }
+          .admin-credentials {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 6px;
+            margin-top: 20px;
+            text-align: left;
+            display: inline-block;
+          }
+          .admin-credentials code {
+            background: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   return (
     <div className="add-user">
-      <h2>{isEditing ? "Sửa thông tin người dùng" : "Thêm người dùng mới"}</h2>
+      <h2>➕ Thêm người dùng mới</h2>
 
       {error && <div className="error-message">{error}</div>}
       {success && (
         <div className="success-message">
-          {isEditing
-            ? "Cập nhật người dùng thành công!"
-            : "Thêm người dùng thành công!"}
+          ✅ Thêm người dùng thành công!
         </div>
       )}
 
@@ -289,25 +289,8 @@ const AddUser = ({ onUserAdded, editingUser, onCancelEdit }) => {
             }
             className="submit-btn"
           >
-            {loading
-              ? isEditing
-                ? "Đang cập nhật..."
-                : "Đang thêm..."
-              : isEditing
-              ? "Cập nhật người dùng"
-              : "Thêm người dùng"}
+            {loading ? "Đang thêm..." : "➕ Thêm người dùng"}
           </button>
-
-          {isEditing && (
-            <button
-              type="button"
-              onClick={handleCancel}
-              disabled={loading}
-              className="cancel-btn"
-            >
-              Hủy
-            </button>
-          )}
         </div>
       </form>
     </div>

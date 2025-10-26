@@ -12,6 +12,7 @@ import ForgotPassword from './ForgotPassword';
 import ResetPassword from './ResetPassword';
 import UploadAvatar from './UploadAvatar';
 import ProtectedRoute from './components/ProtectedRoute';
+import BackButton from './components/BackButton';
 import { Routes, Route, Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { logoutThunk, refreshUserThunk, restoreAuth } from "./store/authSlice";
@@ -76,7 +77,10 @@ function App() {
   return (
     <div className="App">
       <header className={`App-header ${!isAuthenticated ? "center-header" : ""}`}>
-        <h1>Quản lý người dùng</h1>
+        <div className="brand" style={{ alignItems: 'center' }}>
+          <BackButton />
+          <h1>Quản lý người dùng</h1>
+        </div>
         {isAuthenticated && user && (
           <nav style={{ display: "flex", gap: 10 }}>
             <Link to="/profile" className="btn btn-ghost">

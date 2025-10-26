@@ -1,38 +1,59 @@
 import React, { useState } from 'react';
 import UserList from './UserList';
 import AddUser from './AddUser';
+import EditUserModal from './components/EditUserModal';
 
 // Admin page with full CRUD controls and edit flow
 const AdminUsers = () => {
   const [editingUser, setEditingUser] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const handleEdit = (user) => setEditingUser(user);
-  const handleCancelEdit = () => setEditingUser(null);
-  const handleUserAddedOrUpdated = () => {
-    // Force UserList to remount and refetch
-    setRefreshTrigger((n) => n + 1);
+  const handleEdit = (user) => {
+    setEditingUser(user);
+  };
+
+  const handleCloseModal = () => {
+    setEditingUser(null);
+  };
+
+  const handleUserAdded = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
+
+  const handleUserUpdated = () => {
+    setRefreshTrigger(prev => prev + 1);
+    setEditingUser(null);
   };
 
   return (
-    <div>
-      <h2>Admin - Quản lý người dùng</h2>
+    <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+      <h1 style={{ marginBottom: '30px', color: '#0f172a' }}>👨‍💼 Admin - Quản lý người dùng</h1>
+      
+      {/* Form thêm user mới - luôn hiển thị */}
+      <div style={{ marginBottom: '40px' }}>
+        <AddUser 
+          onUserAdded={handleUserAdded}
+        />
+      </div>
+      
+      {/* Danh sách users */}
+      <div style={{ marginTop: '40px' }}>
+        <UserList 
+          key={refreshTrigger}
+          editingUser={editingUser}
+          onEdit={handleEdit}
+          showActions={true}
+        />
+      </div>
 
-      {/* Add or Edit form */}
-      <AddUser
-        onUserAdded={handleUserAddedOrUpdated}
-        editingUser={editingUser}
-        onCancelEdit={handleCancelEdit}
-      />
-
-      {/* Users grid with actions */}
-      <UserList
-        key={refreshTrigger}
-        onEdit={handleEdit}
-        editingUser={editingUser}
-        onCancelEdit={handleCancelEdit}
-        showActions={true}
-      />
+      {/* Modal sửa user - chỉ hiện khi có user được chọn */}
+      {editingUser && (
+        <EditUserModal
+          user={editingUser}
+          onClose={handleCloseModal}
+          onUserUpdated={handleUserUpdated}
+        />
+      )}
     </div>
   );
 };
