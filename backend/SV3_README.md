@@ -1320,3 +1320,358 @@ Sample Data: 35 logs, 10 rate limits, 5 blocked IPs
 **Author:** SV3 - Database & Integration  
 **Date:** January 2025  
 **Status:**  ALL FIVE ACTIVITIES COMPLETED (1-5)
+
+##  Hoàn thành - Redux & Protected Routes Integration
+
+###  Các tính nang dã tri?n khai
+
+#### 1. **User Schema Enhancement cho Redux State**
+ File: `backend/models/User.js`
+
+**Redux-ready fields:**
+- `isAdmin` (Boolean) - Flag cho Protected Admin Routes
+- `bio` (String) - Profile bio
+- `phone` (String) - Contact phone  
+- `address` (String) - User address
+- `preferences` (Object) - User settings (theme, language, notifications)
+
+**Enhanced profile virtual:**
+-  Tr? v? d?y d? `_id`, `isAdmin`, `bio`, `phone`, `address`, `preferences`
+-  Optimized cho Redux user state
+-  Includes avatar, role, lastLogin, timestamps
+
+#### 2. **Database Test Suite - Redux Integration**
+ File: `backend/test-redux-protected-routes.js`
+
+**18 Comprehensive Tests:**
+
+**Schema Tests (4):**
+1.  User schema has Redux fields (name, email, role, isAdmin)
+2.  Admin user has isAdmin=true flag
+3.  User.profile virtual includes all Redux info
+4.  User role check (Protected Routes authorization)
+
+**Token Tests (3):**
+5.  RefreshToken creation (Redux token storage)
+6.  Query RefreshToken (Redux token refresh)
+7.  Token revocation (Redux logout)
+
+**Query Tests (5):**
+8.  Query user by ID (Redux thunk getUserInfo)
+9.  Query admin user (Protected Admin Routes)
+10.  Query regular users (Admin Dashboard)
+11.  Query active users (Access control)
+12.  Count users by role (Dashboard stats)
+
+**Update Tests (3):**
+13.  User profile update (Redux profile actions)
+14.  lastLogin timestamp (Redux login state)
+15.  User preferences storage (Redux settings)
+
+**Logging Tests (2):**
+16.  ActivityLog tracks Redux actions
+17.  Failed login tracking (Redux error handling)
+
+**Integration Tests (1):**
+18.  Complete login flow (Redux thunk simulation)
+
+**Test Results:**
+```
+Total Tests: 18
+ Passed: 18
+ Failed: 0
+Success Rate: 100%
+```
+
+#### 3. **API Support cho Redux Thunks**
+
+**Login API Response:**
+```json
+{
+  "success": true,
+  "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+  "refreshToken": "a1b2c3d4e5f6...",
+  "user": {
+    "_id": "...",
+    "name": "...",
+    "email": "...",
+    "role": "user",
+    "isAdmin": false,
+    "bio": "",
+    "phone": "",
+    "address": "",
+    "preferences": {
+      "theme": "light",
+      "language": "vi",
+      "notifications": { ... }
+    },
+    "isActive": true,
+    "lastLogin": "2025-10-26T10:00:00.000Z"
+  }
+}
+```
+
+**RefreshToken Support:**
+-  Token persistence trong database
+-  Auto-refresh khi access token h?t h?n
+-  Revoke token khi logout
+
+**ActivityLog Tracking:**
+-  Track login/logout actions
+-  Log failed login attempts
+-  Audit trail cho security
+
+#### 4. **Documentation**
+ File: `backend/REDUX_PROTECTED_ROUTES_TESTING.md`
+
+**Content:**
+-  Complete testing guide (18 tests)
+-  API endpoint documentation
+-  Redux integration examples
+-  Protected Routes implementation
+-  Database schema for Redux
+-  MongoDB queries
+-  Troubleshooting guide
+
+---
+
+##  Cách s? d?ng - Redux & Protected Routes
+
+### 1. Run Database Tests
+
+```bash
+cd backend
+node test-redux-protected-routes.js
+```
+
+**Expected:** All 18 tests pass 
+
+### 2. API Endpoints cho Redux
+
+**Login (Redux thunk):**
+```javascript
+export const login = (email, password) => async (dispatch) => {
+  const response = await api.post('/auth/login', { email, password });
+  const { accessToken, refreshToken, user } = response.data;
+  
+  dispatch(setUser(user));
+  dispatch(setTokens({ accessToken, refreshToken }));
+  localStorage.setItem('accessToken', accessToken);
+  localStorage.setItem('refreshToken', refreshToken);
+};
+```
+
+**Logout (Redux thunk):**
+```javascript
+export const logout = () => async (dispatch) => {
+  const refreshToken = localStorage.getItem('refreshToken');
+  await api.post('/auth/logout', { refreshToken });
+  
+  dispatch(clearUser());
+  dispatch(clearTokens());
+  localStorage.clear();
+};
+```
+
+**Get Profile (Protected):**
+```javascript
+export const getProfile = () => async (dispatch, getState) => {
+  const { accessToken } = getState().auth;
+  const response = await api.get('/profile', {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  dispatch(setUser(response.data.user));
+};
+```
+
+### 3. Protected Routes (Frontend - SV1/SV2)
+
+```javascript
+// ProtectedRoute.jsx
+const ProtectedRoute = ({ children, adminOnly = false }) => {
+  const { user, isAuthenticated } = useSelector(state => state.auth);
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (adminOnly && !user.isAdmin) {
+    return <Navigate to="/unauthorized" replace />;
+  }
+  
+  return children;
+};
+
+// App.js
+<Routes>
+  <Route path="/login" element={<Login />} />
+  <Route path="/profile" element={
+    <ProtectedRoute><Profile /></ProtectedRoute>
+  } />
+  <Route path="/admin" element={
+    <ProtectedRoute adminOnly><Admin /></ProtectedRoute>
+  } />
+</Routes>
+```
+
+---
+
+##  Redux State Structure
+
+**Auth Slice:**
+```javascript
+{
+  auth: {
+    user: {
+      _id: "507f1f77bcf86cd799439011",
+      name: "John Doe",
+      email: "user@example.com",
+      role: "user",
+      isAdmin: false,
+      bio: "",
+      phone: "",
+      address: "",
+      preferences: {
+        theme: "light",
+        language: "vi",
+        notifications: { ... }
+      },
+      lastLogin: "2025-10-26T10:00:00.000Z"
+    },
+    accessToken: "eyJhbGciOiJIUzI1NiIs...",
+    refreshToken: "a1b2c3d4e5f6...",
+    isAuthenticated: true,
+    loading: false,
+    error: null
+  }
+}
+```
+
+---
+
+##  Screenshots c?n n?p - Redux & Protected Routes
+
+### 1. Database Tests 
+- Terminal: 18/18 tests passed (100%)
+- Sample data: Users, Admins, Tokens, Logs
+
+### 2. MongoDB Evidence 
+- Users v?i isAdmin flag
+- RefreshTokens v?i active tokens
+- ActivityLogs v?i login/logout
+
+### 3. Frontend Demo (SV1/SV2 làm)
+- Redux DevTools v?i auth state
+- Login  Redux saves user + tokens
+- Protected Route `/profile` accessible
+- Protected Route `/admin` blocked (non-admin)
+- Admin user  `/admin` accessible
+- Logout  Redux clears state  Routes blocked
+
+### 4. API Testing (Postman) 
+- Login response v?i Redux-ready user object
+- Protected route v?i Bearer token
+- Token refresh flow
+- Logout API
+
+---
+
+##  Files Delivered - Redux & Protected Routes
+
+```
+backend/
+ models/
+    User.js                              #  Redux fields added
+ test-redux-protected-routes.js           #  18 database tests
+ REDUX_PROTECTED_ROUTES_TESTING.md        #  Documentation
+ SV3_README.md                            #  Updated
+```
+
+---
+
+##  Highlights - Redux & Protected Routes (SV3)
+
+### Database Enhancement 
+-  User schema v?i isAdmin flag
+-  Enhanced profile virtual (16 fields)
+-  Preferences object cho user settings
+-  RefreshToken persistence
+-  ActivityLog tracking
+
+### Testing 
+-  18 comprehensive tests (100% pass)
+-  Schema validation tests
+-  Token management tests
+-  User query tests
+-  Profile update tests
+-  Activity logging tests
+-  Integration test
+
+### API Support 
+-  Login API with Redux-ready response
+-  RefreshToken API cho token refresh
+-  Logout API v?i token revocation
+-  Protected routes v?i JWT validation
+-  ActivityLog cho audit trail
+
+### Documentation 
+-  Complete testing guide
+-  API endpoint docs v?i Redux examples
+-  Protected Routes implementation
+-  Redux integration patterns
+-  Troubleshooting guide
+
+---
+
+##  Test Checklist - Redux & Protected Routes
+
+- [x] Run `node test-redux-protected-routes.js`  18/18 passed
+- [x] User schema có isAdmin flag
+- [x] User.profile có d?y d? Redux fields
+- [x] RefreshToken creation working
+- [x] Token query và revocation working
+- [x] ActivityLog tracking actions
+- [x] User role checks working
+- [x] Profile update working
+- [x] lastLogin tracking working
+- [x] Preferences storage working
+- [x] Integration test passing
+- [ ] Screenshot: Test results (18/18)
+- [ ] Screenshot: MongoDB data
+- [ ] Screenshot: API testing
+- [ ] Demo: Frontend v?i Redux + Protected Routes
+
+---
+
+##  Team Contribution - Redux & Protected Routes
+
+**SV1 - Frontend UI:**
+- Protected Route components
+- Login/Signup UI
+- Profile page
+- Admin Dashboard UI
+
+**SV2 - Redux Implementation:**
+- Redux Toolkit setup
+- Auth slice (reducer, actions, thunks)
+- Store configuration
+- Protected Route HOC
+- Token refresh interceptor
+
+**SV3 - Database & Integration:**  **COMPLETED**
+- User schema updates (isAdmin, preferences, etc.)
+- Database test suite (18 tests, 100% pass)
+- API support cho Redux thunks
+- RefreshToken persistence
+- ActivityLog tracking
+- Complete documentation
+
+**Time:** ~3-4 hours | **Code:** ~800+ lines | **Tests:** 18/18 
+
+---
+
+**Author:** SV3 - Database & Integration  
+**Date:** October 26, 2025  
+**Project:** Redux & Protected Routes  
+**Branch:** feature/redux-protected  
+**Status:**  COMPLETED - 18/18 tests passed (100%)

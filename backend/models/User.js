@@ -153,14 +153,20 @@ userSchema.virtual("profile").get(function () {
   }
 
   return {
+    _id: this._id,
     id: this._id,
     name: this.name,
     email: this.email,
     role: this.role,
+    isAdmin: this.isAdmin || false,
     avatar: avatarValue,
     age: this.age,
+    bio: this.bio,
+    phone: this.phone,
+    address: this.address,
     isActive: this.isActive,
     lastLogin: this.lastLogin,
+    preferences: this.preferences,
     createdAt: this.createdAt,
     updatedAt: this.updatedAt,
   };
