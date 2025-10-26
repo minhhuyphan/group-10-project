@@ -134,41 +134,28 @@ app.get("/cors-test", (req, res) => {
 
 // Debug route: list registered routes (development only)
 app.get("/_debug_routes", (req, res) => {
-  try {
-    const routes = [];
-    if (app._router && app._router.stack) {
-      app._router.stack.forEach((middleware) => {
-        if (middleware.route) {
-          // routes registered directly on the app
-          const methods = Object.keys(middleware.route.methods)
-            .join(",")
-            .toUpperCase();
-          routes.push({ path: middleware.route.path, methods });
-        } else if (
-          middleware.name === "router" &&
-          middleware.handle &&
-          middleware.handle.stack
-        ) {
-          // router middleware
-          middleware.handle.stack.forEach((handler) => {
-            if (handler.route) {
-              const methods = Object.keys(handler.route.methods)
-                .join(",")
-                .toUpperCase();
-              routes.push({ path: handler.route.path, methods });
-            }
-          });
-        }
-      });
-    }
-    res.json({ 
-      totalRoutes: routes.length,
-      routes: routes,
-      message: "Available API endpoints"
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message, stack: err.stack });
-  }
+  res.json({ 
+    message: "Available API endpoints",
+    directRoutes: [
+      "GET / - API Info",
+      "GET /health - Health check", 
+      "GET /users - Get all users",
+      "POST /api/users - Create user (admin/moderator)",
+      "PUT /api/users/:id - Update user (admin/moderator)",
+      "DELETE /api/users/:id - Delete user (admin)",
+      "POST /api/avatars/upload - Upload avatar",
+      "GET /api/avatars/:id - Get avatar",
+      "POST /auth/login - User login",
+      "POST /auth/signup - User signup"
+    ],
+    mountedRoutes: [
+      "/api - userRoutes", 
+      "/auth - authRoutes",
+      "/api/activity - activityRoutes",
+      "/api - reduxRoutes",
+      "/api/avatars - avatarRoutes"
+    ]
+  });
 });
 
 const PORT = process.env.PORT || 10000;

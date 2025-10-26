@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import api from "./api";
+import { usePermissions } from "./components/UserRoleIndicator";
 
 const AddUser = ({ onUserAdded, editingUser, onCancelEdit }) => {
   const [formData, setFormData] = useState({
@@ -16,6 +17,7 @@ const AddUser = ({ onUserAdded, editingUser, onCancelEdit }) => {
     email: "",
     age: "",
   });
+  const { hasPermission, canManageUsers } = usePermissions();
 
   // Fill form when editing
   useEffect(() => {
@@ -210,6 +212,53 @@ const AddUser = ({ onUserAdded, editingUser, onCancelEdit }) => {
       onCancelEdit();
     }
   };
+
+  // Check permissions
+  if (!canManageUsers) {
+    return (
+      <div className="add-user permission-denied">
+        <h2>🔒 Không có quyền truy cập</h2>
+        <div className="permission-message">
+          <p>Bạn cần đăng nhập với tài khoản <strong>Admin</strong> hoặc <strong>Moderator</strong> để thêm/sửa người dùng.</p>
+          <div className="admin-credentials">
+            <h4>Tài khoản Admin để test:</h4>
+            <ul>
+              <li>Email: <code>admin@example.com</code></li>
+              <li>Password: <code>admin123</code></li>
+            </ul>
+          </div>
+        </div>
+        <style jsx>{`
+          .permission-denied {
+            text-align: center;
+            padding: 40px 20px;
+            background: #fff5f5;
+            border: 1px solid #feb2b2;
+            border-radius: 8px;
+            margin: 20px 0;
+          }
+          .permission-message {
+            color: #744d4d;
+            margin: 20px 0;
+          }
+          .admin-credentials {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 6px;
+            margin-top: 20px;
+            text-align: left;
+            display: inline-block;
+          }
+          .admin-credentials code {
+            background: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   return (
     <div className="add-user">
