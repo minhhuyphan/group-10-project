@@ -214,7 +214,7 @@ const AddUser = ({ onUserAdded, editingUser, onCancelEdit }) => {
   };
 
   // Check permissions
-  if (!canManageUsers) {
+  if (!canManageUsers()) {
     return (
       <div className="add-user permission-denied">
         <h2>🔒 Không có quyền truy cập</h2>
