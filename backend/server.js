@@ -85,6 +85,25 @@ app.use("/api/users", avatarRoutes);
 
 // Profile routes are handled by reduxRoutes.js - removed duplicates
 
+// Root endpoint for Render health checks
+app.get("/", (req, res) => {
+  res.json({ 
+    message: "Group 10 Project Backend API",
+    status: "OK",
+    version: "1.0.0",
+    timestamp: new Date().toISOString(),
+    mongoConnected: isMongoConnected,
+    availableRoutes: [
+      "GET /health - Health check",
+      "GET /users - Get all users", 
+      "GET /api/users - Get all users (API)",
+      "POST /auth/login - User login",
+      "POST /auth/signup - User signup",
+      "GET /_debug_routes - List all routes"
+    ]
+  });
+});
+
 // Health check endpoint
 app.get("/health", (req, res) => {
   res.json({ 
