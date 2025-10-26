@@ -76,7 +76,8 @@ export const refreshUserThunk = createAsyncThunk(
   'auth/refreshUser',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await api.get('/profile');
+  // Use /api prefix so dev proxy works and production rewrite maps to /profile
+  const res = await api.get('/api/profile');
       return res.data.user;
     } catch (error) {
       const message = error?.response?.data?.message || error.message || 'Failed to refresh user';

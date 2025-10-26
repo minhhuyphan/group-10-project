@@ -54,7 +54,7 @@ export default function ProfilePage() {
       const payload = {};
       if (localAge !== "" && localAge !== null) payload.age = localAge;
       if (avatarPreview) payload.avatar = avatarPreview;
-      const res = await api.put("/profile", payload);
+  const res = await api.put("/api/profile", payload);
       if (res.data && res.data.user) {
         setUser && setUser(res.data.user);
         setMessage("Lưu thành công");
@@ -71,7 +71,7 @@ export default function ProfilePage() {
     setSavingAvatar(true);
     setMessage("");
     try {
-      const res = await api.put("/profile", { avatar: avatarPreview });
+  const res = await api.put("/api/profile", { avatar: avatarPreview });
       if (res.data && res.data.user) {
         dispatch(setUser(res.data.user));
         setMessage("Ảnh đã được lưu");

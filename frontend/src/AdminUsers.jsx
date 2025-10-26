@@ -3,14 +3,13 @@ import UserList from './UserList';
 import AddUser from './AddUser';
 import EditUserModal from './components/EditUserModal';
 
+// Admin page with full CRUD controls and edit flow
 const AdminUsers = () => {
   const [editingUser, setEditingUser] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const handleEdit = (user) => {
-    console.log('🔍 handleEdit called with user:', user);
     setEditingUser(user);
-    console.log('✅ editingUser state updated');
   };
 
   const handleCloseModal = () => {
@@ -49,14 +48,11 @@ const AdminUsers = () => {
 
       {/* Modal sửa user - chỉ hiện khi có user được chọn */}
       {editingUser && (
-        <>
-          {console.log('🎯 Rendering EditUserModal with editingUser:', editingUser)}
-          <EditUserModal
-            user={editingUser}
-            onClose={handleCloseModal}
-            onUserUpdated={handleUserUpdated}
-          />
-        </>
+        <EditUserModal
+          user={editingUser}
+          onClose={handleCloseModal}
+          onUserUpdated={handleUserUpdated}
+        />
       )}
     </div>
   );

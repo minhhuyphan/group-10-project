@@ -69,19 +69,19 @@ export default function AdminLogs() {
         if (action) params.set('action', action);
         if (userId) params.set('userId', userId.trim());
         params.set('limit', String(limit));
-        res = await api.get(`/activity/search?${params.toString()}`);
+  res = await api.get(`/api/activity/search?${params.toString()}`);
       } else if (isToday) {
         const params = new URLSearchParams();
         if (action) params.set('action', action);
         if (userId) params.set('userId', userId.trim());
         params.set('limit', String(limit));
-        res = await api.get(`/activity/recent?${params.toString()}`);
+  res = await api.get(`/api/activity/recent?${params.toString()}`);
       } else {
         const params = new URLSearchParams();
         if (action) params.set('action', action);
         if (userId) params.set('userId', userId.trim());
         params.set('limit', String(limit));
-        res = await api.get(`/activity/date/${encodeURIComponent(date)}?${params.toString()}`);
+  res = await api.get(`/api/activity/date/${encodeURIComponent(date)}?${params.toString()}`);
       }
 
       const data = res?.data?.data?.activities || [];

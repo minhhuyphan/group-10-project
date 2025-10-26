@@ -158,7 +158,9 @@ const AddUser = ({ onUserAdded }) => {
         onUserAdded(response.data);
       }
     } catch (err) {
-      const errorMessage = "Không thể thêm người dùng. Vui lòng thử lại.";
+      // Hiển thị lỗi cụ thể từ server (ví dụ: email trùng, validate sai)
+      const srvMsg = err?.response?.data?.message || err?.response?.data?.error;
+      const errorMessage = srvMsg || "Không thể thêm người dùng. Vui lòng thử lại.";
       setError(errorMessage);
       console.error("Error saving user:", err);
     } finally {

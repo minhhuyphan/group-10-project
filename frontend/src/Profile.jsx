@@ -37,7 +37,8 @@ export default function Profile() {
   const fetchProfile = async () => {
     setLoading(true);
     try {
-      const res = await api.get("/profile");
+  // Use /api prefix to be consistent with production rewrite
+  const res = await api.get("/api/profile");
       if (res.data && res.data.user) {
         const u = res.data.user;
         setForm({
@@ -83,7 +84,7 @@ export default function Profile() {
       if (form.age !== "") payload.age = form.age;
       if (form.avatar !== "") payload.avatar = form.avatar;
 
-      const res = await api.put("/profile", payload);
+  const res = await api.put("/api/profile", payload);
       if (res.data && res.data.user) {
         setMessage("Cập nhật thông tin thành công");
         dispatch(setUser(res.data.user));
