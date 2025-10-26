@@ -1,27 +1,38 @@
-import React, { useState, useContext } from "react";
-import { AuthContext } from "./AuthContext";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { loginThunk, clearError } from "./store/authSlice";
 
 const Login = ({ onSwitchToSignUp }) => {
-  const { login } = useContext(AuthContext);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { loading, error, isAuthenticated } = useSelector((state) => state.auth);
+  
   const [form, setForm] = useState({ email: "", password: "" });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
-    try {
-      await login(form);
-    } catch (err) {
-      setError(err.response?.data?.message || err.message || "Lỗi đăng nhập");
-    } finally {
-      setLoading(false);
+    dispatch(clearError());
+    const result = await dispatch(loginThunk(form));
+    
+    // Nếu login thành công, redirect về trang trước đó hoặc home
+    if (loginThunk.fulfilled.match(result)) {
+      const from = location.state?.from?.pathname || '/';
+      navigate(from, { replace: true });
     }
   };
+
+  // Auto-redirect nếu đã login
+  useEffect(() => {
+    if (isAuthenticated) {
+      const from = location.state?.from?.pathname || '/';
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, navigate, location]);
 
   return (
     <div className="auth-portal center">
@@ -70,9 +81,21 @@ const Login = ({ onSwitchToSignUp }) => {
           </div>
 
           <div style={{ textAlign: "center", marginTop: 12 }}>
-            <a className="muted" href="#/forgot-password">
+            <button
+              type="button"
+              className="muted"
+              onClick={() => navigate("/forgot-password")}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#0070ba",
+                cursor: "pointer",
+                textDecoration: "none",
+                fontSize: "inherit"
+              }}
+            >
               Quên mật khẩu?
-            </a>
+            </button>
           </div>
 
           <div className="or-row">

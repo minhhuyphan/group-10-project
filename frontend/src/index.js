@@ -2,26 +2,22 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
-import { AuthProvider } from './AuthContext';
-import { HashRouter } from 'react-router-dom';
+import { BrowserRouter } from 'react-router-dom';
 import reportWebVitals from './reportWebVitals';
+// Redux imports
+import { Provider } from 'react-redux';
+import store from './store';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
-// Clear any stored session so the app always opens to the login screen
-// (choice B: always require login on startup)
-try {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
-} catch (e) {
-  // ignore if unavailable
-}
+// NOTE: Removed localStorage.clear() to persist login sessions
+// Activity 6: Wrapped with Redux Provider for state management
 root.render(
   <React.StrictMode>
-    <AuthProvider>
-      <HashRouter>
+    <Provider store={store}>
+      <BrowserRouter>
         <App />
-      </HashRouter>
-    </AuthProvider>
+      </BrowserRouter>
+    </Provider>
   </React.StrictMode>
 );
 

@@ -1,20 +1,22 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import api from "./api";
-import { AuthContext } from "./AuthContext";
+import { useSelector } from "react-redux";
+import UserRoleIndicator, { usePermissions } from "./components/UserRoleIndicator";
 
-const UserList = ({ editingUser, onEdit, onCancelEdit, showActions = true }) => {
+const UserList = ({ onEdit, showActions = true }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(null); // Track which user is being deleted
-  const { user: currentUser } = useContext(AuthContext);
+  const currentUser = useSelector((state) => state.auth.user);
+  const { hasPermission, canManageUsers } = usePermissions();
 
   // Enhanced fetch users with better error handling
   const fetchUsers = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.get("/users");
+      const response = await api.get("/api/users");
       setUsers(response.data);
       console.log(`✅ Loaded ${response.data.length} users successfully`);
     } catch (err) {
@@ -47,7 +49,7 @@ const UserList = ({ editingUser, onEdit, onCancelEdit, showActions = true }) => 
 
     try {
       setDeleteLoading(userId);
-      await api.delete(`/users/${userId}`);
+      await api.delete(`/api/users/${userId}`);
 
       // Optimistic update
       setUsers((prevUsers) =>
@@ -85,6 +87,8 @@ const UserList = ({ editingUser, onEdit, onCancelEdit, showActions = true }) => 
 
   return (
     <div className="user-list">
+      <UserRoleIndicator />
+      
       <div className="user-list-header">
         <h2>Danh sách người dùng</h2>
         <button onClick={handleRefresh} className="refresh-btn">
@@ -97,33 +101,39 @@ const UserList = ({ editingUser, onEdit, onCancelEdit, showActions = true }) => 
       ) : (
         <div className="users-grid">
           {users.map((user, index) => (
-            <div key={user._id || user.id || index} className="user-card">
+            <div 
+              key={user._id || user.id || index} 
+              className="user-card"
+            >
               <h3>{user.name}</h3>
               <p>Email: {user.email}</p>
               {user.age && <p>Tuổi: {user.age}</p>}
               {showActions && (
                 <div className="user-actions">
-                  <button
-                    onClick={() => handleEdit(user)}
-                    className="edit-btn"
-                    disabled={deleteLoading === (user._id || user.id)}
-                  >
-                    {editingUser &&
-                    (editingUser._id || editingUser.id) === (user._id || user.id)
-                      ? "Đang sửa..."
-                      : "Sửa"}
-                  </button>
-                  {(
-                    currentUser?.role === 'admin' ||
-                    (currentUser && (currentUser._id || currentUser.id) === (user._id || user.id))
-                  ) && (
+                  {hasPermission('edit_user') && (
+                    <button
+                      onClick={() => handleEdit(user)}
+                      className="edit-btn"
+                      disabled={deleteLoading === (user._id || user.id)}
+                    >
+                      ✏️ Sửa
+                    </button>
+                  )}
+                  {hasPermission('delete_user') && (
                     <button
                       onClick={() => handleDelete(user._id || user.id)}
                       className="delete-btn"
                       disabled={deleteLoading === (user._id || user.id)}
                     >
-                      {deleteLoading === (user._id || user.id) ? "Đang xóa..." : "Xóa"}
+                      {deleteLoading === (user._id || user.id) ? "Đang xóa..." : "🗑️ Xóa"}
                     </button>
+                  )}
+                  {!canManageUsers && (
+                    <div className="no-permissions">
+                      <small style={{ color: '#666', fontStyle: 'italic' }}>
+                        👀 Chỉ xem (cần quyền admin/moderator để quản lý)
+                      </small>
+                    </div>
                   )}
                 </div>
               )}

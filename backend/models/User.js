@@ -47,13 +47,19 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    avatarCloudinaryId: {
+      type: String,
+      default: null,
+    },
     avatarData: {
       type: Buffer,
       default: null,
+      select: false,
     },
     avatarMime: {
       type: String,
       default: null,
+      select: false,
     },
     age: {
       type: Number,
@@ -84,6 +90,42 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    // Redux & Protected Routes support fields
+    isAdmin: {
+      type: Boolean,
+      default: false,
+    },
+    bio: {
+      type: String,
+      maxlength: [500, "Bio không được quá 500 ký tự"],
+      default: "",
+    },
+    phone: {
+      type: String,
+      match: [/^[\d\s\-\+\(\)]+$/, "Số điện thoại không hợp lệ"],
+      default: "",
+    },
+    address: {
+      type: String,
+      maxlength: [200, "Địa chỉ không được quá 200 ký tự"],
+      default: "",
+    },
+    preferences: {
+      theme: {
+        type: String,
+        enum: ["light", "dark", "auto"],
+        default: "light",
+      },
+      language: {
+        type: String,
+        default: "vi",
+      },
+      notifications: {
+        email: { type: Boolean, default: true },
+        push: { type: Boolean, default: true },
+        sms: { type: Boolean, default: false },
+      },
+    },
   },
   {
     timestamps: true,
@@ -111,14 +153,20 @@ userSchema.virtual("profile").get(function () {
   }
 
   return {
+    _id: this._id,
     id: this._id,
     name: this.name,
     email: this.email,
     role: this.role,
+    isAdmin: this.isAdmin || false,
     avatar: avatarValue,
     age: this.age,
+    bio: this.bio,
+    phone: this.phone,
+    address: this.address,
     isActive: this.isActive,
     lastLogin: this.lastLogin,
+    preferences: this.preferences,
     createdAt: this.createdAt,
     updatedAt: this.updatedAt,
   };
@@ -140,6 +188,10 @@ userSchema.pre("save", async function (next) {
 // Compare password
 userSchema.methods.comparePassword = async function (candidatePassword) {
   try {
+    // Guard: if password field is not loaded, signal no match to avoid throwing
+    if (!this.password || typeof candidatePassword !== 'string') {
+      return false;
+    }
     return await bcrypt.compare(candidatePassword, this.password);
   } catch (error) {
     throw error;
@@ -232,8 +284,8 @@ userSchema.statics.authenticate = async function (email, password) {
 };
 
 // RBAC Helper Methods
-userSchema.methods.isAdmin = function () {
-  return this.role === 'admin';
+userSchema.methods.hasRole = function (role) {
+  return this.role === role || this.isAdmin === true;
 };
 
 userSchema.methods.isModerator = function () {
@@ -255,6 +307,23 @@ userSchema.methods.canManageDepartment = function (department) {
   return false;
 };
 
+// Generate password reset token
+userSchema.methods.generateResetPasswordToken = function () {
+  const crypto = require('crypto');
+  
+  // Generate reset token
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  
+  // Hash token and set to resetPasswordToken field
+  this.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+  
+  // Set expire time (1 hour)
+  this.resetPasswordExpires = Date.now() + 60 * 60 * 1000;
+  
+  // Return unhashed token (to be sent via email)
+  return resetToken;
+};
+
 // Static: Get users by role
 userSchema.statics.getUsersByRole = async function (role) {
   return this.find({ role, isActive: true }).select('-password');
@@ -268,5 +337,34 @@ userSchema.statics.countByRole = async function () {
     { $sort: { _id: 1 } }
   ]);
 };
+
+// Defensive projection: always exclude heavy/sensitive fields unless explicitly included
+function excludeHeavyFields(query) {
+  // Only add projection if user didn't explicitly request avatarData/avatarMime
+  const fields = query._fields;
+  // Always exclude heavy avatar binary fields and noisy metadata unless explicitly requested
+  if (!fields || (!fields.avatarData && !fields.avatarMime)) {
+    query.select('-__v -resetPasswordToken -resetPasswordExpires -avatarData -avatarMime');
+  }
+  // IMPORTANT: do NOT force-exclude password here; some flows (login) intentionally select('+password')
+}
+
+userSchema.pre('find', function () { excludeHeavyFields(this); });
+userSchema.pre('findOne', function () { excludeHeavyFields(this); });
+userSchema.pre('findById', function () { excludeHeavyFields(this); });
+
+// Global JSON transform to remove sensitive/heavy fields from all responses
+userSchema.set('toJSON', {
+  virtuals: true,
+  transform: (doc, ret) => {
+    delete ret.password;
+    delete ret.__v;
+    delete ret.resetPasswordToken;
+    delete ret.resetPasswordExpires;
+    delete ret.avatarData; // ensure raw binary never leaks
+    delete ret.avatarMime;
+    return ret;
+  }
+});
 
 module.exports = mongoose.model("User", userSchema);

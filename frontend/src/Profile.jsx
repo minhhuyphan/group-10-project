@@ -1,9 +1,11 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState } from "react";
 import api from "./api";
-import { AuthContext } from "./AuthContext";
+import { useDispatch, useSelector } from "react-redux";
+import { setUser } from "./store/authSlice";
 
 export default function Profile() {
-  const { user, setUser } = useContext(AuthContext);
+  const dispatch = useDispatch();
+  const user = useSelector((state) => state.auth.user);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -35,7 +37,8 @@ export default function Profile() {
   const fetchProfile = async () => {
     setLoading(true);
     try {
-      const res = await api.get("/profile");
+  // Use /api prefix to be consistent with production rewrite
+  const res = await api.get("/api/profile");
       if (res.data && res.data.user) {
         const u = res.data.user;
         setForm({
@@ -45,7 +48,7 @@ export default function Profile() {
           avatar: u.avatar || "",
         });
         setAvatarPreview(u.avatar || '');
-        setUser && setUser(u);
+        dispatch(setUser(u));
       }
     } catch (err) {
       setError(err.response?.data?.message || err.message);
@@ -81,10 +84,10 @@ export default function Profile() {
       if (form.age !== "") payload.age = form.age;
       if (form.avatar !== "") payload.avatar = form.avatar;
 
-      const res = await api.put("/profile", payload);
+  const res = await api.put("/api/profile", payload);
       if (res.data && res.data.user) {
         setMessage("Cập nhật thông tin thành công");
-        setUser && setUser(res.data.user);
+        dispatch(setUser(res.data.user));
         setAvatarPreview(res.data.user.avatar || '');
       } else {
         setMessage(res.data?.message || "Đã cập nhật");

@@ -1,8 +1,10 @@
-const User = require('../models/User');
+ const User = require('../models/User');
 const RefreshToken = require('../models/RefreshToken');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const { sendPasswordResetEmail } = require('../services/emailService');
+const { logActivity } = require('../middleware/activityLogMiddleware');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key';
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'dev_refresh_secret_key';
@@ -104,10 +106,26 @@ exports.login = async (req, res) => {
     if (!email || !password) return res.status(400).json({ message: 'Missing email/password' });
 
     const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
-    if (!user) return res.status(400).json({ message: 'Không tìm thấy tài khoản' });
+    if (!user) {
+      // Log failed login attempt - user not found
+      logActivity(email, 'LOGIN_FAILED', new Date(), {
+        ip: req.ip || req.connection.remoteAddress,
+        userAgent: req.get('user-agent'),
+        details: { reason: 'User not found', email }
+      });
+      return res.status(400).json({ message: 'Không tìm thấy tài khoản' });
+    }
 
     const isMatch = await user.comparePassword(password);
-    if (!isMatch) return res.status(401).json({ message: 'Sai mật khẩu' });
+    if (!isMatch) {
+      // Log failed login attempt - wrong password
+      logActivity(user._id.toString(), 'LOGIN_FAILED', new Date(), {
+        ip: req.ip || req.connection.remoteAddress,
+        userAgent: req.get('user-agent'),
+        details: { reason: 'Wrong password', email }
+      });
+      return res.status(401).json({ message: 'Sai mật khẩu' });
+    }
 
     // Tạo access token và refresh token
     const accessToken = generateAccessToken(user._id);
@@ -123,6 +141,22 @@ exports.login = async (req, res) => {
     user.lastLogin = Date.now();
     await user.save({ validateBeforeSave: false });
 
+    // Clear login attempts if using rate limiter
+    if (req.clearLoginAttempts) {
+      req.clearLoginAttempts();
+    }
+
+    // Log successful login
+    logActivity(user._id.toString(), 'LOGIN_SUCCESS', new Date(), {
+      ip: ipAddress,
+      userAgent: req.get('user-agent'),
+      details: { 
+        email: user.email,
+        name: user.name,
+        lastLogin: user.lastLogin
+      }
+    });
+
     res.json({ 
       success: true,
       message: 'Đăng nhập thành công', 
@@ -132,11 +166,19 @@ exports.login = async (req, res) => {
     });
   } catch (err) {
     console.error('Login error:', err);
+    
+    // Log error
+    logActivity(req.body.email || 'unknown', 'LOGIN_ERROR', new Date(), {
+      ip: req.ip || req.connection.remoteAddress,
+      userAgent: req.get('user-agent'),
+      details: { error: err.message }
+    });
+    
     res.status(500).json({ message: err.message || 'Internal server error' });
   }
 };
 
-// === Quên mật khẩu: tạo reset token ===
+// === Quên mật khẩu: tạo reset token và gửi email ===
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -145,18 +187,67 @@ exports.forgotPassword = async (req, res) => {
     const user = await User.findOne({ email: email.toLowerCase(), isActive: true });
     if (!user) {
       // tránh lộ thông tin tài khoản tồn tại hay không
-      return res.json({ message: 'If email exists, a reset token was created', success: true });
+      return res.json({ 
+        message: 'Nếu email tồn tại, email đặt lại mật khẩu đã được gửi', 
+        success: true 
+      });
     }
 
+    // Tạo reset token
     const resetToken = user.generateResetPasswordToken();
     await user.save({ validateBeforeSave: false });
 
-    const debugReturn =
-      process.env.DEBUG_RETURN_RESET_TOKEN === 'true' || process.env.NODE_ENV === 'development';
-    const payload = { message: 'Reset token created', success: true };
-    if (debugReturn) payload.resetToken = resetToken;
-
-    res.json(payload);
+    // Kiểm tra xem có gửi email thật không (dựa vào EMAIL_USER và EMAIL_PASS)
+    const emailConfigured = process.env.EMAIL_USER && process.env.EMAIL_PASS;
+    
+    if (emailConfigured) {
+      // Gửi email thật
+      try {
+        await sendPasswordResetEmail(user.email, resetToken, user.name);
+        console.log('✅ Password reset email sent to:', user.email);
+        
+        res.json({ 
+          message: 'Email đặt lại mật khẩu đã được gửi. Vui lòng kiểm tra hộp thư của bạn.', 
+          success: true 
+        });
+      } catch (emailError) {
+        console.error('❌ Failed to send email:', emailError.message);
+        
+        // Nếu gửi email thất bại, vẫn return debug token nếu đang ở dev mode
+        const debugReturn = process.env.DEBUG_RETURN_RESET_TOKEN === 'true' || 
+                           process.env.NODE_ENV === 'development';
+        
+        if (debugReturn) {
+          return res.json({ 
+            message: 'Không thể gửi email. Token debug đã được tạo.', 
+            success: true,
+            resetToken: resetToken,
+            error: 'Email sending failed: ' + emailError.message
+          });
+        }
+        
+        return res.status(500).json({ 
+          message: 'Không thể gửi email. Vui lòng thử lại sau.', 
+          success: false 
+        });
+      }
+    } else {
+      // Email chưa được config - trả về debug token
+      console.warn('⚠️  Email not configured. Returning debug token.');
+      const debugReturn = process.env.DEBUG_RETURN_RESET_TOKEN === 'true' || 
+                         process.env.NODE_ENV === 'development';
+      
+      const payload = { 
+        message: 'Email chưa được cấu hình. Token debug đã được tạo.', 
+        success: true 
+      };
+      
+      if (debugReturn) {
+        payload.resetToken = resetToken;
+      }
+      
+      res.json(payload);
+    }
   } catch (err) {
     console.error('Forgot password error:', err);
     res.status(500).json({ message: err.message || 'Internal server error' });
@@ -166,7 +257,9 @@ exports.forgotPassword = async (req, res) => {
 // === Đặt lại mật khẩu ===
 exports.resetPassword = async (req, res) => {
   try {
-    const { token, newPassword } = req.body;
+    // Accept token from URL param or body
+    const token = req.params.token || req.body.token;
+    const { newPassword } = req.body;
     if (!token || !newPassword) {
       return res.status(400).json({ message: 'Token and newPassword required' });
     }
@@ -460,3 +553,56 @@ exports.getUserTokens = async (req, res) => {
     });
   }
 };
+
+// === Validate Reset Token: Kiểm tra token hợp lệ ===
+exports.validateResetToken = async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: 'Reset token is required'
+      });
+    }
+
+    // Hash the token to compare with stored token
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    // Find user with valid reset token
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired reset token'
+      });
+    }
+
+    // Check if user is active
+    if (!user.isActive) {
+      return res.status(400).json({
+        success: false,
+        message: 'Account is deactivated'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Reset token is valid',
+      email: user.email // Return email for form pre-fill
+    });
+
+  } catch (err) {
+    console.error('Validate reset token error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Error validating reset token'
+    });
+  }
+};
+
+

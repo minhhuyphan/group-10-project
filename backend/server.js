@@ -5,14 +5,44 @@ const cors = require("cors");
 const app = express();
 
 // Import middlewares
-const { requestLogger, errorLogger } = require('./middleware/loggingMiddleware');
-const { generalRateLimiter, authRateLimiter, refreshTokenRateLimiter } = require('./middleware/rateLimitMiddleware');
+const {
+  requestLogger,
+  errorLogger,
+} = require("./middleware/loggingMiddleware");
+const {
+  generalRateLimiter,
+  authRateLimiter,
+  refreshTokenRateLimiter,
+} = require("./middleware/rateLimitMiddleware");
+
+// Import Cloudinary config
+const { testConnection } = require("./config/cloudinary");
 
 // Middleware
+const allowedOrigins = [
+  "http://localhost:3000", 
+  "http://127.0.0.1:3000",
+  "https://group-10-project-nine.vercel.app", // Frontend production URL
+  process.env.FRONTEND_PRODUCTION_URL
+].filter(Boolean).filter((origin, index, arr) => arr.indexOf(origin) === index); // Remove duplicates
+
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
+    origin: function (origin, callback) {
+      // Allow requests with no origin (mobile apps, curl, etc.)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        console.log(`❌ CORS blocked origin: ${origin}`);
+        console.log(`✅ Allowed origins: ${allowedOrigins.join(', ')}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
 
@@ -26,116 +56,71 @@ app.use(requestLogger);
 // Apply general rate limiting
 app.use(generalRateLimiter);
 
-// Routes
+// Routes - Reorganized to avoid conflicts
 const userRoutes = require("./routes/user");
-app.use("/", userRoutes);
+app.use("/api", userRoutes);
+
+// Add direct /users route for frontend compatibility
+const userController = require("./controllers/usercontroller");
+const { authenticateAccessToken, checkRole } = require("./middleware/authMiddleware");
+
+app.get("/users", userController.getUsers);
+app.post("/users", authenticateAccessToken, checkRole(['admin', 'moderator']), userController.createUser);
+app.put("/users/:id", authenticateAccessToken, checkRole(['admin', 'moderator']), userController.updateUser);
+app.delete("/users/:id", authenticateAccessToken, checkRole(['admin']), userController.deleteUser);
 
 // Authentication routes với rate limiting riêng
 const authRoutes = require("./routes/authRoutes");
 app.use("/auth/login", authRateLimiter);
 app.use("/auth/refresh", refreshTokenRateLimiter);
 app.use("/auth", authRoutes);
-const jwt = require("jsonwebtoken");
-const User = require("./models/User");
 
-const authenticateToken = async (req, res, next) => {
-  try {
-    const authHeader = req.headers["authorization"];
-    const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+// Activity Log routes - SV1
+const activityRoutes = require("./routes/activityRoutes");
+app.use("/api/activity", activityRoutes);
 
-    if (!token) {
-      return res
-        .status(401)
-        .json({
-          message: "Access token not provided",
-          error: "No token provided",
-        });
-    }
+// Redux Support routes - SV1 Backend Support (separated to avoid conflicts)
+const reduxRoutes = require("./routes/reduxRoutes");
+app.use("/api/redux", reduxRoutes);
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id);
+// Avatar routes - mount at /api/avatars to avoid conflicts
+const avatarRoutes = require("./routes/avatarRoutes");
+app.use("/api/avatars", avatarRoutes);
 
-    if (!user || !user.isActive) {
-      return res
-        .status(401)
-        .json({
-          message: "Invalid token or user not found",
-          error: "Invalid token",
-        });
-    }
+// Profile routes are handled by reduxRoutes.js - removed duplicates
 
-    req.user = user;
-    next();
-  } catch (error) {
-    console.error("Auth middleware error:", error.message);
-    return res
-      .status(403)
-      .json({ message: "Invalid token", error: "Invalid token" });
-  }
-};
-
-// -----------------------------
-// Profile routes (GET, PUT)
-// -----------------------------
-app.get("/profile", authenticateToken, async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id);
-    if (!user) return res.status(404).json({ message: "User not found" });
-    res.json({ message: "Profile fetched", user: user.profile });
-  } catch (err) {
-    console.error("Get profile error:", err.message);
-    res.status(500).json({ message: "Server error", error: err.message });
-  }
+// Root endpoint for Render health checks
+app.get("/", (req, res) => {
+  res.json({ 
+    message: "Group 10 Project Backend API",
+    status: "OK",
+    version: "1.0.0",
+    timestamp: new Date().toISOString(),
+    mongoConnected: isMongoConnected,
+    availableRoutes: [
+      "GET /health - Health check",
+      "GET /users - Get all users", 
+      "GET /api/users - Get all users (API)",
+      "PUT /api/users/:id - Update user by ID",
+      "POST /api/avatars/upload - Upload user avatar",
+      "GET /api/avatars/:id - Get user avatar",
+      "POST /auth/login - User login",
+      "POST /auth/signup - User signup",
+      "GET /_debug_routes - List all routes"
+    ]
+  });
 });
 
-app.put("/profile", authenticateToken, async (req, res) => {
-  try {
-    const { name, age, avatar } = req.body;
-    const update = {};
-    if (name) update.name = name.trim();
-    if (age !== undefined) update.age = parseInt(age);
-
-    // If avatar is a data URL (base64), parse and store binary + mime
-    if (avatar !== undefined) {
-      if (typeof avatar === 'string' && avatar.startsWith('data:')) {
-        const matches = avatar.match(/^data:(.+);base64,(.*)$/);
-        if (matches) {
-          const mime = matches[1];
-          const b64 = matches[2];
-          const buf = Buffer.from(b64, 'base64');
-          update.avatarData = buf;
-          update.avatarMime = mime;
-          // also clear textual avatar field or keep for external URL
-          update.avatar = null;
-        } else {
-          // Not a well-formed data URL — save raw string
-          update.avatar = avatar;
-        }
-      } else {
-        // Not base64 — likely a URL
-        update.avatar = avatar;
-        update.avatarData = null;
-        update.avatarMime = null;
-      }
-    }
-
-    const updatedUser = await User.findByIdAndUpdate(req.user._id, update, {
-      new: true,
-      runValidators: true,
-    });
-    if (!updatedUser)
-      return res.status(404).json({ message: "User not found" });
-    res.json({ message: "Profile updated", user: updatedUser.profile });
-  } catch (err) {
-    console.error("Update profile error:", err.message);
-    if (err.name === "ValidationError") {
-      const messages = Object.values(err.errors).map((e) => e.message);
-      return res
-        .status(400)
-        .json({ message: messages.join(", "), error: "Validation error" });
-    }
-    res.status(500).json({ message: "Server error", error: err.message });
-  }
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.json({ 
+    status: "OK",
+    message: "Server is running",
+    timestamp: new Date().toISOString(),
+    mongoConnected: isMongoConnected,
+    port: PORT,
+    environment: process.env.NODE_ENV || 'development'
+  });
 });
 
 // Add a test route
@@ -143,32 +128,42 @@ app.get("/test", (req, res) => {
   res.json({ message: "Server is working!" });
 });
 
-// Debug route: list registered routes (development only)
-app.get('/_debug_routes', (req, res) => {
-  try {
-    const routes = [];
-    app._router.stack.forEach((middleware) => {
-      if (middleware.route) {
-        // routes registered directly on the app
-        const methods = Object.keys(middleware.route.methods).join(',').toUpperCase();
-        routes.push({ path: middleware.route.path, methods });
-      } else if (middleware.name === 'router' && middleware.handle && middleware.handle.stack) {
-        // router middleware
-        middleware.handle.stack.forEach((handler) => {
-          if (handler.route) {
-            const methods = Object.keys(handler.route.methods).join(',').toUpperCase();
-            routes.push({ path: handler.route.path, methods });
-          }
-        });
-      }
-    });
-    res.json({ routes });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+// CORS debug endpoint
+app.get("/cors-test", (req, res) => {
+  res.json({ 
+    message: "CORS test successful",
+    origin: req.get('origin'),
+    allowedOrigins: allowedOrigins
+  });
 });
 
-const PORT = process.env.PORT || 3001;
+// Debug route: list registered routes (development only)
+app.get("/_debug_routes", (req, res) => {
+  res.json({ 
+    message: "Available API endpoints",
+    directRoutes: [
+      "GET / - API Info",
+      "GET /health - Health check", 
+      "GET /users - Get all users",
+      "POST /api/users - Create user (admin/moderator)",
+      "PUT /api/users/:id - Update user (admin/moderator)",
+      "DELETE /api/users/:id - Delete user (admin)",
+      "POST /api/avatars/upload - Upload avatar",
+      "GET /api/avatars/:id - Get avatar",
+      "POST /auth/login - User login",
+      "POST /auth/signup - User signup"
+    ],
+    mountedRoutes: [
+      "/api - userRoutes", 
+      "/auth - authRoutes",
+      "/api/activity - activityRoutes",
+      "/api - reduxRoutes",
+      "/api/avatars - avatarRoutes"
+    ]
+  });
+});
+
+const PORT = process.env.PORT || 10000;
 
 // Global variable to track MongoDB connection status
 let isMongoConnected = false;
@@ -186,25 +181,13 @@ const connectDB = async () => {
     isMongoConnected = true;
     console.log("✅ Connected to MongoDB successfully!");
 
-    // Create default admin user if not exists
-    const User = require("./models/User");
-    try {
-      const adminExists = await User.findOne({ email: "admin@example.com" });
-      if (!adminExists) {
-        const adminUser = new User({
-          name: "Admin User",
-          email: "admin@example.com",
-          password: "admin123",
-          role: "admin",
-        });
-        await adminUser.save();
-        console.log(
-          "✅ Default admin user created: admin@example.com / admin123"
-        );
-      }
-    } catch (adminError) {
-      console.log("⚠️ Admin user creation skipped:", adminError.message);
-    }
+    // Test Cloudinary connection
+    console.log("Testing Cloudinary connection...");
+    await testConnection();
+
+    // Setup default users for Redux Protected Routes testing
+    const { setupDefaultUsers } = require("./middleware/setupAdmin");
+    await setupDefaultUsers();
   } catch (error) {
     console.error("❌ MongoDB connection error:", error.message);
     console.log("🔄 Falling back to mock data mode");
@@ -212,8 +195,29 @@ const connectDB = async () => {
   }
 };
 
+// Add error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Global error handler:', err);
+  
+  if (err.message === 'Not allowed by CORS') {
+    return res.status(403).json({
+      error: 'CORS Error',
+      message: 'Origin not allowed',
+      origin: req.get('origin'),
+      allowedOrigins: allowedOrigins
+    });
+  }
+  
+  res.status(500).json({
+    error: 'Internal Server Error',
+    message: err.message
+  });
+});
+
 // Start server
 app.listen(PORT, async () => {
   console.log(`🚀 Server is running on port ${PORT}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔗 Allowed CORS origins: ${allowedOrigins.join(', ')}`);
   await connectDB();
 });

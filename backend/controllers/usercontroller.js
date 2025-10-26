@@ -16,7 +16,21 @@ exports.getUsers = async (req, res) => {
   try {
     // 3. Dùng User.find() để lấy tất cả user từ MongoDB
     // Lệnh này tương đương với "SELECT * FROM users" trong SQL
-    const users = await User.find();
+    let users = await User.find()
+      // Loại bỏ các trường nặng/nhạy cảm để tránh trả về dữ liệu lớn
+      .select('-password -avatarData -avatarMime -resetPasswordToken -refreshTokens -__v')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Phòng thủ bổ sung: đảm bảo không rò rỉ avatarData/avatarMime ngay cả khi projection bị bỏ qua
+    users = users.map(u => {
+      if (u && (u.avatarData || u.avatarMime)) {
+        delete u.avatarData;
+        delete u.avatarMime;
+      }
+      return u;
+    });
+
     res.json(users);
   } catch (err) {
     // 4. Xử lý lỗi nếu có sự cố khi truy vấn database
@@ -32,7 +46,9 @@ exports.createUser = async (req, res) => {
   // Tạo một đối tượng user mới dựa trên model User và dữ liệu từ request body
   const user = new User({
     name: req.body.name,
-    email: req.body.email
+    email: req.body.email,
+    password: req.body.password || 'defaultPassword123', // Add default password if not provided
+    age: req.body.age
   });
 
   try {
@@ -41,16 +57,12 @@ exports.createUser = async (req, res) => {
     // 7. Trả về status 201 (Created) và dữ liệu của user vừa tạo
     res.status(201).json(newUser);
   } catch (err) {
-    // 8. Xử lý lỗi, ví dụ như email bị trùng hoặc thiếu trường dữ liệu
-    // For demonstration: add to mock data when database is not accessible
-    console.log('Database not accessible, adding to mock data:', err.message);
-    const newMockUser = {
-      _id: (mockUsers.length + 1).toString(),
-      name: req.body.name,
-      email: req.body.email
-    };
-    mockUsers.push(newMockUser);
-    res.status(201).json(newMockUser);
+    // 8. Xử lý lỗi
+    console.error('Error creating user:', err.message);
+    res.status(400).json({ 
+      message: 'Error creating user', 
+      error: err.message 
+    });
   }
 };
 
@@ -66,7 +78,7 @@ exports.updateUser = async (req, res) => {
       id,
       { ...req.body },
       { new: true, runValidators: true }
-    );
+    ).select('-password');
 
     if (updatedUser) {
       console.log('User updated in MongoDB:', updatedUser);
@@ -75,17 +87,11 @@ exports.updateUser = async (req, res) => {
       res.status(404).json({ message: "User not found" });
     }
   } catch (err) {
-    // Fallback to mock data if MongoDB fails
-    console.log('Database not accessible, updating mock data:', err.message);
-    
-    const index = mockUsers.findIndex(u => u._id == id);
-    if (index !== -1) {
-      mockUsers[index] = { ...mockUsers[index], ...req.body };
-      console.log('User updated in mock data:', mockUsers[index]);
-      res.json(mockUsers[index]);
-    } else {
-      res.status(404).json({ message: "User not found" });
-    }
+    console.error('Error updating user:', err.message);
+    res.status(400).json({ 
+      message: 'Error updating user', 
+      error: err.message 
+    });
   }
 };
 
@@ -105,17 +111,11 @@ exports.deleteUser = async (req, res) => {
       res.status(404).json({ message: "User not found" });
     }
   } catch (err) {
-    // Fallback to mock data if MongoDB fails
-    console.log('Database not accessible, deleting from mock data:', err.message);
-    
-    const userToDelete = mockUsers.find(u => u._id == id);
-    if (userToDelete) {
-      mockUsers = mockUsers.filter(u => u._id != id);
-      console.log('User deleted from mock data:', userToDelete);
-      res.json({ message: "User deleted", deletedUser: userToDelete });
-    } else {
-      res.status(404).json({ message: "User not found" });
-    }
+    console.error('Error deleting user:', err.message);
+    res.status(400).json({ 
+      message: 'Error deleting user', 
+      error: err.message 
+    });
   }
 };
 
@@ -140,7 +140,18 @@ exports.getUsersWithRBAC = async (req, res) => {
     }
     // Admin có thể xem tất cả (không cần query filter)
 
-    const users = await User.find(query).select('-password -resetPasswordToken');
+    let users = await User.find(query)
+      .select('-password -resetPasswordToken -avatarData -avatarMime -__v')
+      .lean();
+
+    // Phòng thủ bổ sung
+    users = users.map(u => {
+      if (u && (u.avatarData || u.avatarMime)) {
+        delete u.avatarData;
+        delete u.avatarMime;
+      }
+      return u;
+    });
     
     res.json({
       success: true,

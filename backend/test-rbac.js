@@ -93,11 +93,11 @@ function test(name, fn) {
       console.log(`   Found ${users.length} regular user(s)`);
     })();
 
-    // Test 6: Test admin helper method
-    await test('Admin helper method works', async () => {
-      if (!adminUser.isAdmin()) throw new Error('isAdmin() returned false for admin');
-      if (moderatorUser.isAdmin()) throw new Error('isAdmin() returned true for moderator');
-      if (regularUser.isAdmin()) throw new Error('isAdmin() returned true for user');
+    // Test 6: Test admin field
+    await test('Admin field works', async () => {
+      if (!adminUser.isAdmin) throw new Error('isAdmin field is false for admin');
+      if (moderatorUser.isAdmin) throw new Error('isAdmin field is true for moderator');
+      if (regularUser.isAdmin) throw new Error('isAdmin field is true for user');
     })();
 
     // Test 7: Test moderator helper method

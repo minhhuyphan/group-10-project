@@ -23,8 +23,7 @@ const ResetPassword = () => {
     }
     setLoading(true);
     try {
-      const res = await api.post("/auth/reset-password", {
-        token,
+      const res = await api.post(`/auth/reset-password/${encodeURIComponent(token)}`, {
         newPassword: password,
       });
       setMessage(

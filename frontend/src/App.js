@@ -1,103 +1,186 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import "./App.css";
 import UserList from "./UserList";
 import AddUser from "./AddUser";
 import SignUp from "./SignUp";
 import Login from "./Login";
-import Profile from "./Profile";
 import ProfilePage from "./ProfilePage";
-import AdminUsers from './AdminUsers';
-import ModeratorUsers from './ModeratorUsers';
-import ForgotPassword from './ForgotPassword';
-import ResetPassword from './ResetPassword';
-import UploadAvatar from './UploadAvatar';
-import { Routes, Route, Link } from "react-router-dom";
-import { AuthContext } from "./AuthContext";
-import { useNavigate } from "react-router-dom";
-import RequireRole from './components/RequireRole';
-import { ROLES, isAdmin, isAdminOrModerator } from './roles';
+import AdminUsers from "./AdminUsers";
+import ModeratorUsers from "./ModeratorUsers";
+import AdminLogs from "./AdminLogs";
+import ForgotPassword from "./ForgotPassword";
+import ResetPassword from "./ResetPassword";
+import UploadAvatar from "./UploadAvatar";
+import ProtectedRoute from "./components/ProtectedRoute";
+import BackButton from "./components/BackButton";
+import { Routes, Route, Link, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { logoutThunk, refreshUserThunk, restoreAuth } from "./store/authSlice";
+import { getAccessToken, getRefreshToken } from "./api";
+import { isAdmin, isAdminOrModerator } from "./roles";
 
 function App() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [editingUser, setEditingUser] = useState(null);
-  const { user, logout } = useContext(AuthContext);
-  const { initializing } = useContext(AuthContext);
-  const navigate = useNavigate();
   const [showLogin, setShowLogin] = useState(true);
 
-  // Function to trigger refresh of user list
-  const handleUserAdded = () => {
-    setRefreshTrigger((prev) => prev + 1);
-  };
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { user, isAuthenticated, initializing } = useSelector(
+    (state) => state.auth
+  );
 
-  // Function to handle edit user
-  const handleEditUser = (user) => {
-    setEditingUser(user);
-  };
+  // Restore auth from localStorage on mount
+  useEffect(() => {
+    const accessToken = getAccessToken();
+    const refreshToken = getRefreshToken();
+    const storedUser = localStorage.getItem("user");
 
-  // Function to cancel editing
-  const handleCancelEdit = () => {
-    setEditingUser(null);
+    if (accessToken) {
+      dispatch(
+        restoreAuth({
+          accessToken,
+          refreshToken,
+          user: storedUser ? JSON.parse(storedUser) : null,
+        })
+      );
+      dispatch(refreshUserThunk());
+    }
+  }, [dispatch]);
+
+  // Persist user to localStorage when it changes
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem("user", JSON.stringify(user));
+    } else {
+      localStorage.removeItem("user");
+    }
+  }, [user]);
+
+  // Functions
+  const handleUserAdded = () => setRefreshTrigger((prev) => prev + 1);
+  const handleEditUser = (u) => setEditingUser(u);
+  const handleCancelEdit = () => setEditingUser(null);
+  const handleLogout = () => {
+    dispatch(logoutThunk());
+    navigate("/");
   };
 
   return (
     <div className="App">
-      <header className={`App-header ${!user ? "center-header" : ""}`}>
-        <h1>Quản lý người dùng</h1>
-        {user && (
+      {/* Header */}
+      <header className={`App-header ${!isAuthenticated ? "center-header" : ""}`}>
+        <div className="brand" style={{ alignItems: "center" }}>
+          <BackButton />
+          <h1>Quản lý người dùng</h1>
+        </div>
+
+        {isAuthenticated && user && (
           <nav style={{ display: "flex", gap: 10 }}>
             <Link to="/profile" className="btn btn-ghost">
               Profile
             </Link>
-            {isAdmin(user) && (
-              <Link to="/admin/users" className="btn btn-ghost">Admin</Link>
+            <Link to="/upload-avatar" className="btn btn-ghost">
+              Upload Avatar
+            </Link>
+            {user.role === "admin" && (
+              <>
+                <Link to="/admin/users" className="btn btn-ghost">
+                  Admin
+                </Link>
+                <Link to="/admin/logs" className="btn btn-ghost">
+                  Logs
+                </Link>
+              </>
             )}
             {isAdminOrModerator(user) && (
-              <Link to="/moderator/users" className="btn btn-ghost">Moderator</Link>
+              <Link to="/moderator/users" className="btn btn-ghost">
+                Moderator
+              </Link>
             )}
           </nav>
         )}
       </header>
 
+      {/* Main */}
       <main className="App-main">
-        <div className={`container ${!user ? "center-vert" : ""}`}>
+        <div className={`container ${!isAuthenticated ? "center-vert" : ""}`}>
           <Routes>
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/admin/users" element={(
-              <RequireRole roles={[ROLES.ADMIN]}>
-                <AdminUsers />
-              </RequireRole>
-            )} />
-            <Route path="/moderator/users" element={(
-              <RequireRole roles={[ROLES.ADMIN, ROLES.MODERATOR]}>
-                <ModeratorUsers />
-              </RequireRole>
-            )} />
+            {/* Public routes */}
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/upload-avatar" element={<UploadAvatar />} />
-            <Route path="/login" element={
-              <div className="auth-forms">
-                <div className="section card">
-                  <Login onSwitchToSignUp={() => setShowLogin(false)} />
+            <Route
+              path="/login"
+              element={
+                <div className="auth-forms">
+                  <div className="section card">
+                    <Login onSwitchToSignUp={() => setShowLogin(false)} />
+                  </div>
                 </div>
-              </div>
-            } />
-            <Route path="/signup" element={
-              <div className="auth-forms">
-                <div className="section card">
-                  <SignUp onSwitchToLogin={() => setShowLogin(true)} />
+              }
+            />
+            <Route
+              path="/signup"
+              element={
+                <div className="auth-forms">
+                  <div className="section card">
+                    <SignUp onSwitchToLogin={() => setShowLogin(true)} />
+                  </div>
                 </div>
-              </div>
-            } />
+              }
+            />
+
+            {/* Protected routes */}
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <ProfilePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/upload-avatar"
+              element={
+                <ProtectedRoute>
+                  <UploadAvatar />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <AdminUsers />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/logs"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <AdminLogs />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/moderator/users"
+              element={
+                <ProtectedRoute requireAdminOrModerator>
+                  <ModeratorUsers />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Home route */}
             <Route
               path="/"
               element={
                 initializing ? (
-                  <div className="center-vert" style={{ minHeight: '60vh' }}>
+                  <div className="center-vert" style={{ minHeight: "60vh" }}>
                     <div className="card">Loading...</div>
                   </div>
-                ) : !user ? (
+                ) : !isAuthenticated ? (
                   <div className="auth-forms">
                     <div className="section card">
                       {showLogin ? (
@@ -110,7 +193,7 @@ function App() {
                 ) : (
                   <>
                     <div className="profile">
-                      <h2>Welcome, {user.name || user.email}</h2>
+                      <h2>Welcome, {user?.name || user?.email}</h2>
                       <div
                         style={{
                           display: "flex",
@@ -118,21 +201,25 @@ function App() {
                           alignItems: "center",
                         }}
                       >
-                        <span className="badge" title="role" style={{ background: '#eee', color:'#333', padding: '4px 8px', borderRadius: 6 }}>
-                          Role: {user.role || 'user'}
-                        </span>
-                        <button
-                          onClick={() => {
-                            logout();
-                            navigate("/");
+                        <span
+                          className="badge"
+                          title="role"
+                          style={{
+                            background: "#eee",
+                            color: "#333",
+                            padding: "4px 8px",
+                            borderRadius: 6,
                           }}
-                          className="btn btn-ghost"
                         >
+                          Role: {user.role || "user"}
+                        </span>
+                        <button onClick={handleLogout} className="btn btn-ghost">
                           Logout
                         </button>
                       </div>
                     </div>
 
+                    {/* Admin thêm/sửa/xóa */}
                     {isAdmin(user) && (
                       <div className="section">
                         <AddUser
@@ -142,6 +229,8 @@ function App() {
                         />
                       </div>
                     )}
+
+                    {/* Danh sách người dùng */}
                     <div className="section">
                       <UserList
                         key={refreshTrigger}
