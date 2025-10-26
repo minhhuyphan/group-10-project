@@ -19,14 +19,31 @@ const {
 const { testConnection } = require("./config/cloudinary");
 
 // Middleware
+const allowedOrigins = [
+  "http://localhost:3000", 
+  "http://127.0.0.1:3000",
+  "https://group-10-project-nine.vercel.app", // Frontend production URL
+  process.env.FRONTEND_PRODUCTION_URL,
+  "https://group-10-project-nine.vercel.app" // Ensure Vercel URL is included
+].filter(Boolean); // Remove any undefined values
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000", 
-      "http://127.0.0.1:3000",
-      "https://group-10-project-nine.vercel.app" // Frontend production URL
-    ],
+    origin: function (origin, callback) {
+      // Allow requests with no origin (mobile apps, curl, etc.)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        console.log(`❌ CORS blocked origin: ${origin}`);
+        console.log(`✅ Allowed origins: ${allowedOrigins.join(', ')}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
 
@@ -160,9 +177,30 @@ app.put("/profile", authenticateToken, async (req, res) => {
   }
 });
 
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.json({ 
+    status: "OK",
+    message: "Server is running",
+    timestamp: new Date().toISOString(),
+    mongoConnected: isMongoConnected,
+    port: PORT,
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
 // Add a test route
 app.get("/test", (req, res) => {
   res.json({ message: "Server is working!" });
+});
+
+// CORS debug endpoint
+app.get("/cors-test", (req, res) => {
+  res.json({ 
+    message: "CORS test successful",
+    origin: req.get('origin'),
+    allowedOrigins: allowedOrigins
+  });
 });
 
 // Debug route: list registered routes (development only)
@@ -230,8 +268,29 @@ const connectDB = async () => {
   }
 };
 
+// Add error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Global error handler:', err);
+  
+  if (err.message === 'Not allowed by CORS') {
+    return res.status(403).json({
+      error: 'CORS Error',
+      message: 'Origin not allowed',
+      origin: req.get('origin'),
+      allowedOrigins: allowedOrigins
+    });
+  }
+  
+  res.status(500).json({
+    error: 'Internal Server Error',
+    message: err.message
+  });
+});
+
 // Start server
 app.listen(PORT, async () => {
   console.log(`🚀 Server is running on port ${PORT}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔗 Allowed CORS origins: ${allowedOrigins.join(', ')}`);
   await connectDB();
 });
