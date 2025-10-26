@@ -61,8 +61,9 @@ app.use(generalRateLimiter);
 const userRoutes = require("./routes/user");
 app.use("/api", userRoutes);
 
-// Add direct /users route for compatibility
-app.use("/users", userRoutes);
+// Add direct /users route for frontend compatibility
+const userController = require("./controllers/usercontroller");
+app.get("/users", userController.getUsers);
 
 // Authentication routes với rate limiting riêng
 const authRoutes = require("./routes/authRoutes");
